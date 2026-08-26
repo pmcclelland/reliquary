@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { Vitrine } from "@/components/layout/vitrine";
 import { Wordmark } from "@/components/layout/logo";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { authClient, authEnabled, signInWithGoogle } from "@/lib/auth/client";
 import { redirectIfSignedIn } from "@/lib/auth/protect";
 import { getAuthOptions } from "@/lib/reliquary/functions";
@@ -65,98 +68,147 @@ function Login() {
     }
   }
 
+  const heading = mode === "signup" ? "Create a library" : "Open your library";
+
   return (
-    <main className="grid min-h-dvh place-items-center bg-bg px-6 text-fg">
-      <div className="w-full max-w-sm">
-        <Wordmark className="text-2xl" markClassName="size-8" />
-        <p className="mt-3 text-sm text-muted">{APP_TAGLINE}</p>
-        <h1 className="mt-8 font-serif text-3xl tracking-tight">Sign in</h1>
-        <p className="mt-2 text-sm text-muted">
-          Each account is a private library, with its own MCP token.
-        </p>
+    <main className="login-stage relative min-h-dvh text-fg">
+      <div className="absolute top-3 right-3 z-10 sm:top-4 sm:right-4">
+        <ThemeToggle />
+      </div>
 
-        {!authEnabled ? (
-          <p className="mt-6 text-sm text-muted">Sign-in is disabled.</p>
-        ) : (
-          <div className="mt-8 space-y-3">
-            {options.google ? (
-              <Button
-                type="button"
-                className="w-full"
-                disabled={busy}
-                onClick={() => void onGoogle()}
-              >
-                <GoogleMark />
-                Continue with Google
-              </Button>
-            ) : null}
+      <div className="mx-auto grid min-h-dvh max-w-6xl md:grid-cols-2">
+        <section className="relative hidden flex-col justify-between overflow-hidden border-r border-border bg-surface px-12 py-16 lg:px-16 md:flex">
+          <p className="reliquary-enter text-[11px] font-medium tracking-[0.18em] text-subtle uppercase">
+            Reliquary
+          </p>
+          <div className="flex flex-1 items-center justify-center py-10">
+            <Vitrine className="reliquary-enter-2 h-72 w-auto" />
+          </div>
+          <div className="reliquary-enter-3 max-w-md">
+            <h1 className="font-serif text-4xl leading-tight tracking-tight lg:text-5xl">
+              A place to keep things that move.
+            </h1>
+            <p className="mt-4 max-w-sm text-muted">
+              Self-contained HTML — pages, studies, and small interfaces —
+              filed like notes in a quiet archive.
+            </p>
+          </div>
+        </section>
 
-            {options.google ? (
-              <button
-                type="button"
-                className="w-full pt-2 text-center text-sm text-muted hover:text-fg"
-                onClick={() => setEmailOpen((v) => !v)}
-              >
-                {emailOpen ? "Hide email sign-in" : "Use email and password"}
-              </button>
-            ) : null}
+        <section className="flex items-center justify-center px-6 py-16 sm:px-10">
+          <div className="w-full max-w-sm">
+            <div className="md:hidden">
+              <Vitrine className="reliquary-enter mx-auto h-28 w-auto" />
+            </div>
+            <div className="reliquary-enter-2 mt-6 md:mt-0">
+              <Wordmark className="text-2xl" markClassName="size-8" />
+              <p className="mt-3 text-sm text-muted">{APP_TAGLINE}</p>
+            </div>
 
-            {emailOpen && (
-              <form className="space-y-3 pt-1" onSubmit={onEmail}>
-                {mode === "signup" && (
-                  <div className="space-y-2.5">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ada"
-                      autoComplete="name"
-                    />
+            <h2 className="reliquary-enter-3 mt-10 font-serif text-3xl tracking-tight md:text-4xl">
+              {heading}
+            </h2>
+            <p className="mt-2 text-sm text-muted">
+              Each account is a private library, with its own MCP token.
+            </p>
+
+            {!authEnabled ? (
+              <p className="mt-8 text-sm text-muted">Sign-in is disabled.</p>
+            ) : (
+              <div className="mt-8 space-y-4">
+                {options.google ? (
+                  <Button
+                    type="button"
+                    className="w-full"
+                    size="lg"
+                    disabled={busy}
+                    onClick={() => void onGoogle()}
+                  >
+                    <GoogleMark />
+                    Continue with Google
+                  </Button>
+                ) : null}
+
+                {options.google ? (
+                  <div className="flex items-center gap-3">
+                    <Separator className="w-auto flex-1" />
+                    <button
+                      type="button"
+                      className="shrink-0 py-2 text-sm text-muted hover:text-fg"
+                      onClick={() => setEmailOpen((v) => !v)}
+                    >
+                      {emailOpen ? "Hide email" : "Use email"}
+                    </button>
+                    <Separator className="w-auto flex-1" />
                   </div>
+                ) : null}
+
+                {emailOpen && (
+                  <form className="space-y-4" onSubmit={onEmail}>
+                    {mode === "signup" && (
+                      <div className="space-y-2.5">
+                        <Label htmlFor="name">Name</Label>
+                        <Input
+                          id="name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Ada"
+                          autoComplete="name"
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-2.5">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                      />
+                    </div>
+                    <div className="space-y-2.5">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        required
+                        minLength={8}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete={
+                          mode === "signup" ? "new-password" : "current-password"
+                        }
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      size="lg"
+                      disabled={busy}
+                      variant={options.google ? "secondary" : "default"}
+                    >
+                      {mode === "signup" ? "Create account" : "Sign in with email"}
+                    </Button>
+                    <button
+                      type="button"
+                      className="w-full py-1 text-center text-sm text-muted hover:text-fg"
+                      onClick={() =>
+                        setMode((m) => (m === "signin" ? "signup" : "signin"))
+                      }
+                    >
+                      {mode === "signup"
+                        ? "Already have an account? Sign in"
+                        : "Need an account? Create one"}
+                    </button>
+                  </form>
                 )}
-                <div className="space-y-2.5">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                  />
-                </div>
-                <div className="space-y-2.5">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete={
-                      mode === "signup" ? "new-password" : "current-password"
-                    }
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={busy}>
-                  {mode === "signup" ? "Create account" : "Sign in with email"}
-                </Button>
-                <button
-                  type="button"
-                  className="w-full text-center text-sm text-muted hover:text-fg"
-                  onClick={() => setMode((m) => (m === "signin" ? "signup" : "signin"))}
-                >
-                  {mode === "signup"
-                    ? "Already have an account? Sign in"
-                    : "Need an account? Create one"}
-                </button>
-              </form>
+              </div>
             )}
           </div>
-        )}
+        </section>
       </div>
     </main>
   );

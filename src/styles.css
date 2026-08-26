@@ -152,3 +152,27 @@ html[data-theme="dark"] {
   translate: 0 -0.1em;
   translate: 0 -0.14cap;
 }
+
+.login-stage {
+  background-color: var(--color-bg);
+  background-image: radial-gradient(
+    80% 55% at 50% 0%,
+    color-mix(in oklab, var(--color-surface) 72%, transparent),
+    transparent 72%
+  );
+}
+
+@keyframes reliquary-orb {
+  from {
+    opacity: 0.78;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.reliquary-orb {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: reliquary-orb 3.2s var(--ease-smooth-out) infinite alternate;
+}
