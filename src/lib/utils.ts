@@ -95,6 +95,6 @@ export async function copyText(text: string): Promise<boolean> {
   return false;
 }
 
-export function artifactShareUrl(slug: string): string {
-  return new URL(`/s/${slug}`, window.location.origin).href;
+export function artifactShareUrl(idOrSlug: string): string {
+  return new URL(`/s/${idOrSlug}`, window.location.origin).href;
 }

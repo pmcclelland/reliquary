@@ -30,10 +30,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { requireSession } from "@/lib/auth/protect";
 import { deleteArtifactFn, getArtifact, getLibrary } from "@/lib/reliquary/functions";
+import type { Artifact, Library } from "@/lib/reliquary/types";
 import { artifactShareUrl, copyText, formatBytes, formatRelative } from "@/lib/utils";
 
 export const Route = createFileRoute("/a/$slug")({
+  beforeLoad: ({ context }) => {
+    requireSession(context);
+  },
   loader: async ({ params }) => {
     const [library, artifact] = await Promise.all([
       getLibrary(),
@@ -45,7 +50,10 @@ export const Route = createFileRoute("/a/$slug")({
 });
 
 function ArtifactPage() {
-  const { library, artifact } = Route.useLoaderData();
+  const { library, artifact } = Route.useLoaderData() as {
+    library: Library;
+    artifact: Artifact;
+  };
   const router = useRouter();
   const [source, setSource] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -74,7 +82,7 @@ function ArtifactPage() {
   }
 
   async function share() {
-    const url = artifactShareUrl(artifact.slug);
+    const url = artifactShareUrl(artifact.id);
     setShareUrl(url);
     if (await copyText(url)) {
       toast.success("Share link copied");

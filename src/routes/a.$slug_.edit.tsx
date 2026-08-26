@@ -5,9 +5,13 @@ import {
   type EditorValues,
 } from "@/components/artifact/editor-form";
 import { AppShell } from "@/components/layout/app-shell";
+import { requireSession } from "@/lib/auth/protect";
 import { getArtifact, getLibrary, updateArtifactFn } from "@/lib/reliquary/functions";
 
 export const Route = createFileRoute("/a/$slug_/edit")({
+  beforeLoad: ({ context }) => {
+    requireSession(context);
+  },
   loader: async ({ params }) => {
     const [library, artifact] = await Promise.all([
       getLibrary(),

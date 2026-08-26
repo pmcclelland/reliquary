@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as ASlugRouteImport } from './routes/a.$slug'
 import { Route as ApiArtifactsRouteImport } from './routes/api/artifacts'
@@ -20,6 +21,7 @@ import { Route as CSlugRouteImport } from './routes/c.$slug'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as ASlugEditRouteImport } from './routes/a.$slug_.edit'
 import { Route as ApiArtifactsIdRouteImport } from './routes/api/artifacts.$id'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCollectionsIdRouteImport } from './routes/api/collections.$id'
 import { Route as ApiArtifactsIdHtmlRouteImport } from './routes/api/artifacts.$id.html'
 
@@ -31,6 +33,11 @@ const IndexRoute = IndexRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewRoute = NewRouteImport.update({
@@ -78,6 +85,11 @@ const ApiArtifactsIdRoute = ApiArtifactsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiArtifactsRoute,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCollectionsIdRoute = ApiCollectionsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -92,6 +104,7 @@ const ApiArtifactsIdHtmlRoute = ApiArtifactsIdHtmlRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/a/$slug': typeof ASlugRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
@@ -101,12 +114,14 @@ export interface FileRoutesByFullPath {
   '/s/$slug': typeof SSlugRoute
   '/a/$slug/edit': typeof ASlugEditRoute
   '/api/artifacts/$id': typeof ApiArtifactsIdRouteWithChildren
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/collections/$id': typeof ApiCollectionsIdRoute
   '/api/artifacts/$id/html': typeof ApiArtifactsIdHtmlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/a/$slug': typeof ASlugRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
@@ -116,6 +131,7 @@ export interface FileRoutesByTo {
   '/s/$slug': typeof SSlugRoute
   '/a/$slug/edit': typeof ASlugEditRoute
   '/api/artifacts/$id': typeof ApiArtifactsIdRouteWithChildren
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/collections/$id': typeof ApiCollectionsIdRoute
   '/api/artifacts/$id/html': typeof ApiArtifactsIdHtmlRoute
 }
@@ -123,6 +139,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/a/$slug': typeof ASlugRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
@@ -132,6 +149,7 @@ export interface FileRoutesById {
   '/s/$slug': typeof SSlugRoute
   '/a/$slug_/edit': typeof ASlugEditRoute
   '/api/artifacts/$id': typeof ApiArtifactsIdRouteWithChildren
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/collections/$id': typeof ApiCollectionsIdRoute
   '/api/artifacts/$id/html': typeof ApiArtifactsIdHtmlRoute
 }
@@ -140,6 +158,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/docs'
+    | '/login'
     | '/new'
     | '/a/$slug'
     | '/api/artifacts'
@@ -149,12 +168,14 @@ export interface FileRouteTypes {
     | '/s/$slug'
     | '/a/$slug/edit'
     | '/api/artifacts/$id'
+    | '/api/auth/$'
     | '/api/collections/$id'
     | '/api/artifacts/$id/html'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/docs'
+    | '/login'
     | '/new'
     | '/a/$slug'
     | '/api/artifacts'
@@ -164,12 +185,14 @@ export interface FileRouteTypes {
     | '/s/$slug'
     | '/a/$slug/edit'
     | '/api/artifacts/$id'
+    | '/api/auth/$'
     | '/api/collections/$id'
     | '/api/artifacts/$id/html'
   id:
     | '__root__'
     | '/'
     | '/docs'
+    | '/login'
     | '/new'
     | '/a/$slug'
     | '/api/artifacts'
@@ -179,6 +202,7 @@ export interface FileRouteTypes {
     | '/s/$slug'
     | '/a/$slug_/edit'
     | '/api/artifacts/$id'
+    | '/api/auth/$'
     | '/api/collections/$id'
     | '/api/artifacts/$id/html'
   fileRoutesById: FileRoutesById
@@ -186,6 +210,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DocsRoute: typeof DocsRoute
+  LoginRoute: typeof LoginRoute
   NewRoute: typeof NewRoute
   ASlugRoute: typeof ASlugRoute
   ApiArtifactsRoute: typeof ApiArtifactsRouteWithChildren
@@ -194,6 +219,7 @@ export interface RootRouteChildren {
   CSlugRoute: typeof CSlugRoute
   SSlugRoute: typeof SSlugRoute
   ASlugEditRoute: typeof ASlugEditRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -210,6 +236,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new': {
@@ -275,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiArtifactsIdRouteImport
       parentRoute: typeof ApiArtifactsRoute
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/collections/$id': {
       id: '/api/collections/$id'
       path: '/$id'
@@ -331,6 +371,7 @@ const ApiCollectionsRouteWithChildren = ApiCollectionsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DocsRoute: DocsRoute,
+  LoginRoute: LoginRoute,
   NewRoute: NewRoute,
   ASlugRoute: ASlugRoute,
   ApiArtifactsRoute: ApiArtifactsRouteWithChildren,
@@ -339,16 +380,8 @@ const rootRouteChildren: RootRouteChildren = {
   CSlugRoute: CSlugRoute,
   SSlugRoute: SSlugRoute,
   ASlugEditRoute: ASlugEditRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

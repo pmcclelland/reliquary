@@ -110,46 +110,60 @@ function mapCollection(row: CollectionRow): Collection {
   };
 }
 
-let seedPromise: Promise<void> | null = null;
+const seedByUser = new Map<string, Promise<void>>();
 
-async function ensureSeeded(): Promise<void> {
-  seedPromise ??= (async () => {
-    const sql = await getSql();
-    const flags = await sql<{ value: string }>`
-      select value from reliquary_meta where key = 'seeded'
-    `;
-    if (flags.length > 0) return;
-    for (const col of SEED_COLLECTIONS) {
-      await sql`
-        insert into collections (id, slug, title, description, sort_order)
-        values (${col.id}, ${col.slug}, ${col.title}, ${col.description}, ${col.sortOrder})
-        on conflict (id) do nothing
+function scopedId(userId: string, id: string): string {
+  return `${userId}:${id}`;
+}
+
+async function ensureSeeded(userId: string): Promise<void> {
+  let pending = seedByUser.get(userId);
+  if (!pending) {
+    pending = (async () => {
+      const sql = await getSql();
+      const key = `seeded:${userId}`;
+      const flags = await sql<{ value: string }>`
+        select value from reliquary_meta where key = ${key}
       `;
-    }
-    for (const art of SEED_ARTIFACTS) {
+      if (flags.length > 0) return;
+      for (const col of SEED_COLLECTIONS) {
+        await sql`
+          insert into collections (id, user_id, slug, title, description, sort_order)
+          values (
+            ${scopedId(userId, col.id)}, ${userId}, ${col.slug}, ${col.title},
+            ${col.description}, ${col.sortOrder}
+          )
+          on conflict (id) do nothing
+        `;
+      }
+      for (const art of SEED_ARTIFACTS) {
+        await sql`
+          insert into artifacts (
+            id, user_id, slug, title, description, html, collection_id, tags, kind
+          ) values (
+            ${scopedId(userId, art.id)}, ${userId}, ${art.slug}, ${art.title},
+            ${art.description}, ${art.html}, ${scopedId(userId, art.collectionId)},
+            ${JSON.stringify(art.tags)}, ${art.kind}
+          )
+          on conflict (id) do nothing
+        `;
+      }
       await sql`
-        insert into artifacts (
-          id, slug, title, description, html, collection_id, tags, kind
-        ) values (
-          ${art.id}, ${art.slug}, ${art.title}, ${art.description}, ${art.html},
-          ${art.collectionId}, ${JSON.stringify(art.tags)}, ${art.kind}
-        )
-        on conflict (id) do nothing
+        insert into reliquary_meta (key, value) values (${key}, '1')
+        on conflict (key) do nothing
       `;
-    }
-    await sql`
-      insert into reliquary_meta (key, value) values ('seeded', '1')
-      on conflict (key) do nothing
-    `;
-  })().catch((err) => {
-    seedPromise = null;
-    throw err;
-  });
-  return seedPromise;
+    })().catch((err) => {
+      seedByUser.delete(userId);
+      throw err;
+    });
+    seedByUser.set(userId, pending);
+  }
+  return pending;
 }
 
 async function uniqueSlug(
   table: "artifacts" | "collections",
+  userId: string,
   base: string,
   excludeId?: string,
 ): Promise<string> {
@@ -161,20 +175,27 @@ async function uniqueSlug(
       table === "artifacts"
         ? excludeId
           ? await sql<{ id: string }>`
-              select id from artifacts where slug = ${candidate} and id != ${excludeId}
+              select id from artifacts
+              where user_id = ${userId} and slug = ${candidate} and id != ${excludeId}
             `
-          : await sql<{ id: string }>`select id from artifacts where slug = ${candidate}`
+          : await sql<{ id: string }>`
+              select id from artifacts where user_id = ${userId} and slug = ${candidate}
+            `
         : excludeId
           ? await sql<{ id: string }>`
-              select id from collections where slug = ${candidate} and id != ${excludeId}
+              select id from collections
+              where user_id = ${userId} and slug = ${candidate} and id != ${excludeId}
             `
-          : await sql<{ id: string }>`select id from collections where slug = ${candidate}`;
+          : await sql<{ id: string }>`
+              select id from collections where user_id = ${userId} and slug = ${candidate}
+            `;
     if (rows.length === 0) return candidate;
   }
   return `${slug}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 async function resolveCollectionId(
+  userId: string,
   collectionId?: string | null,
   collection?: string | null,
 ): Promise<string | null> {
@@ -183,7 +204,9 @@ async function resolveCollectionId(
   const key = collectionId || collection || null;
   if (!key) return null;
   const rows = await sql<{ id: string }>`
-    select id from collections where id = ${key} or slug = ${key} limit 1
+    select id from collections
+    where user_id = ${userId} and (id = ${key} or slug = ${key})
+    limit 1
   `;
   if (rows.length === 0) {
     throw new ReliquaryError("Collection not found", 404, "NOT_FOUND");
@@ -191,25 +214,30 @@ async function resolveCollectionId(
   return rows[0]!.id;
 }
 
-export async function listCollections(): Promise<Collection[]> {
-  await ensureSeeded();
+export async function listCollections(userId: string): Promise<Collection[]> {
+  await ensureSeeded(userId);
   const sql = await getSql();
   const rows = await sql<CollectionRow>`
     select c.*, (
-      select count(*)::int from artifacts a where a.collection_id = c.id
+      select count(*)::int from artifacts a
+      where a.collection_id = c.id and a.user_id = ${userId}
     ) as count
     from collections c
+    where c.user_id = ${userId}
     order by c.sort_order asc, c.title asc
   `;
   return rows.map(mapCollection);
 }
 
-export async function listArtifacts(opts?: {
-  collection?: string;
-  tag?: string;
-  q?: string;
-}): Promise<ArtifactSummary[]> {
-  await ensureSeeded();
+export async function listArtifacts(
+  userId: string,
+  opts?: {
+    collection?: string;
+    tag?: string;
+    q?: string;
+  },
+): Promise<ArtifactSummary[]> {
+  await ensureSeeded(userId);
   const sql = await getSql();
   const rows = await sql<ArtifactRow>`
     select a.id, a.slug, a.title, a.description, a.collection_id, a.tags, a.kind,
@@ -217,6 +245,7 @@ export async function listArtifacts(opts?: {
       c.slug as collection_slug, c.title as collection_title
     from artifacts a
     left join collections c on c.id = a.collection_id
+    where a.user_id = ${userId}
     order by a.updated_at desc
   `;
   let items = rows.map(mapSummary);
@@ -243,16 +272,35 @@ export async function listArtifacts(opts?: {
   return items;
 }
 
-export async function getLibrary(): Promise<Library> {
+export async function getLibrary(userId: string): Promise<Library> {
   const [collections, artifacts] = await Promise.all([
-    listCollections(),
-    listArtifacts(),
+    listCollections(userId),
+    listArtifacts(userId),
   ]);
   return { collections, artifacts };
 }
 
-export async function getArtifact(idOrSlug: string): Promise<Artifact> {
-  await ensureSeeded();
+export async function getArtifact(
+  userId: string,
+  idOrSlug: string,
+): Promise<Artifact> {
+  await ensureSeeded(userId);
+  const sql = await getSql();
+  const rows = await sql<ArtifactRow>`
+    select a.id, a.slug, a.title, a.description, a.html, a.collection_id, a.tags, a.kind,
+      a.created_at, a.updated_at,
+      c.slug as collection_slug, c.title as collection_title
+    from artifacts a
+    left join collections c on c.id = a.collection_id
+    where a.user_id = ${userId} and (a.id = ${idOrSlug} or a.slug = ${idOrSlug})
+    order by case when a.id = ${idOrSlug} then 0 else 1 end
+    limit 1
+  `;
+  if (rows.length === 0) notFound("Artifact");
+  return mapArtifact(rows[0]!);
+}
+
+export async function getPublicArtifact(idOrSlug: string): Promise<Artifact> {
   const sql = await getSql();
   const rows = await sql<ArtifactRow>`
     select a.id, a.slug, a.title, a.description, a.html, a.collection_id, a.tags, a.kind,
@@ -261,29 +309,37 @@ export async function getArtifact(idOrSlug: string): Promise<Artifact> {
     from artifacts a
     left join collections c on c.id = a.collection_id
     where a.id = ${idOrSlug} or a.slug = ${idOrSlug}
+    order by case when a.id = ${idOrSlug} then 0 else 1 end
     limit 1
   `;
   if (rows.length === 0) notFound("Artifact");
   return mapArtifact(rows[0]!);
 }
 
-export async function getCollection(idOrSlug: string): Promise<Collection> {
-  await ensureSeeded();
+export async function getCollection(
+  userId: string,
+  idOrSlug: string,
+): Promise<Collection> {
+  await ensureSeeded(userId);
   const sql = await getSql();
   const rows = await sql<CollectionRow>`
     select c.*, (
-      select count(*)::int from artifacts a where a.collection_id = c.id
+      select count(*)::int from artifacts a
+      where a.collection_id = c.id and a.user_id = ${userId}
     ) as count
     from collections c
-    where c.id = ${idOrSlug} or c.slug = ${idOrSlug}
+    where c.user_id = ${userId} and (c.id = ${idOrSlug} or c.slug = ${idOrSlug})
     limit 1
   `;
   if (rows.length === 0) notFound("Collection");
   return mapCollection(rows[0]!);
 }
 
-export async function createArtifact(input: ArtifactInput): Promise<Artifact> {
-  await ensureSeeded();
+export async function createArtifact(
+  userId: string,
+  input: ArtifactInput,
+): Promise<Artifact> {
+  await ensureSeeded(userId);
   const title = input.title.trim();
   if (!title) throw new ReliquaryError("Title is required");
   const html = ensureDocument(input.html, title);
@@ -291,29 +347,31 @@ export async function createArtifact(input: ArtifactInput): Promise<Artifact> {
     throw new ReliquaryError("HTML is too large", 413, "TOO_LARGE");
   }
   const collectionId = await resolveCollectionId(
+    userId,
     input.collectionId,
     input.collection,
   );
   const id = crypto.randomUUID();
-  const slug = await uniqueSlug("artifacts", input.slug || title);
+  const slug = await uniqueSlug("artifacts", userId, input.slug || title);
   const tags = normalizeTags(input.tags ?? []);
   const kind: ArtifactKind = inferKind(html);
   const sql = await getSql();
   await sql`
-    insert into artifacts (id, slug, title, description, html, collection_id, tags, kind)
+    insert into artifacts (id, user_id, slug, title, description, html, collection_id, tags, kind)
     values (
-      ${id}, ${slug}, ${title}, ${input.description?.trim() ?? ""}, ${html},
+      ${id}, ${userId}, ${slug}, ${title}, ${input.description?.trim() ?? ""}, ${html},
       ${collectionId}, ${JSON.stringify(tags)}, ${kind}
     )
   `;
-  return getArtifact(id);
+  return getArtifact(userId, id);
 }
 
 export async function updateArtifact(
+  userId: string,
   idOrSlug: string,
   patch: ArtifactPatch,
 ): Promise<Artifact> {
-  const current = await getArtifact(idOrSlug);
+  const current = await getArtifact(userId, idOrSlug);
   const title = patch.title?.trim() ?? current.title;
   if (!title) throw new ReliquaryError("Title is required");
   const html =
@@ -324,11 +382,11 @@ export async function updateArtifact(
   const hasCollectionField =
     patch.collectionId !== undefined || patch.collection !== undefined;
   const collectionId = hasCollectionField
-    ? await resolveCollectionId(patch.collectionId, patch.collection)
+    ? await resolveCollectionId(userId, patch.collectionId, patch.collection)
     : current.collectionId;
   const slug =
     patch.slug !== undefined
-      ? await uniqueSlug("artifacts", patch.slug || title, current.id)
+      ? await uniqueSlug("artifacts", userId, patch.slug || title, current.id)
       : current.slug;
   const tags =
     patch.tags !== undefined ? normalizeTags(patch.tags) : current.tags;
@@ -348,48 +406,53 @@ export async function updateArtifact(
       tags = ${JSON.stringify(tags)},
       kind = ${kind},
       updated_at = now()
-    where id = ${current.id}
+    where id = ${current.id} and user_id = ${userId}
   `;
-  return getArtifact(current.id);
+  return getArtifact(userId, current.id);
 }
 
-export async function deleteArtifact(idOrSlug: string): Promise<{ ok: true }> {
-  const current = await getArtifact(idOrSlug);
+export async function deleteArtifact(
+  userId: string,
+  idOrSlug: string,
+): Promise<{ ok: true }> {
+  const current = await getArtifact(userId, idOrSlug);
   const sql = await getSql();
-  await sql`delete from artifacts where id = ${current.id}`;
+  await sql`delete from artifacts where id = ${current.id} and user_id = ${userId}`;
   return { ok: true };
 }
 
 export async function createCollection(
+  userId: string,
   input: CollectionInput,
 ): Promise<Collection> {
-  await ensureSeeded();
+  await ensureSeeded(userId);
   const title = input.title.trim();
   if (!title) throw new ReliquaryError("Title is required");
   const id = crypto.randomUUID();
-  const slug = await uniqueSlug("collections", input.slug || title);
+  const slug = await uniqueSlug("collections", userId, input.slug || title);
   const sql = await getSql();
   const maxRows = await sql<{ n: number }>`
-    select coalesce(max(sort_order), -1)::int as n from collections
+    select coalesce(max(sort_order), -1)::int as n from collections where user_id = ${userId}
   `;
   const sortOrder = (maxRows[0]?.n ?? -1) + 1;
   await sql`
-    insert into collections (id, slug, title, description, sort_order)
-    values (${id}, ${slug}, ${title}, ${input.description?.trim() ?? ""}, ${sortOrder})
+    insert into collections (id, user_id, slug, title, description, sort_order)
+    values (${id}, ${userId}, ${slug}, ${title}, ${input.description?.trim() ?? ""}, ${sortOrder})
   `;
-  return getCollection(id);
+  return getCollection(userId, id);
 }
 
 export async function updateCollection(
+  userId: string,
   idOrSlug: string,
   patch: Partial<CollectionInput>,
 ): Promise<Collection> {
-  const current = await getCollection(idOrSlug);
+  const current = await getCollection(userId, idOrSlug);
   const title = patch.title?.trim() ?? current.title;
   if (!title) throw new ReliquaryError("Title is required");
   const slug =
     patch.slug !== undefined
-      ? await uniqueSlug("collections", patch.slug || title, current.id)
+      ? await uniqueSlug("collections", userId, patch.slug || title, current.id)
       : current.slug;
   const description =
     patch.description !== undefined
@@ -402,17 +465,21 @@ export async function updateCollection(
       title = ${title},
       description = ${description},
       updated_at = now()
-    where id = ${current.id}
+    where id = ${current.id} and user_id = ${userId}
   `;
-  return getCollection(current.id);
+  return getCollection(userId, current.id);
 }
 
 export async function deleteCollection(
+  userId: string,
   idOrSlug: string,
 ): Promise<{ ok: true }> {
-  const current = await getCollection(idOrSlug);
+  const current = await getCollection(userId, idOrSlug);
   const sql = await getSql();
-  await sql`update artifacts set collection_id = null where collection_id = ${current.id}`;
-  await sql`delete from collections where id = ${current.id}`;
+  await sql`
+    update artifacts set collection_id = null
+    where collection_id = ${current.id} and user_id = ${userId}
+  `;
+  await sql`delete from collections where id = ${current.id} and user_id = ${userId}`;
   return { ok: true };
 }

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ReliquaryError } from "@/lib/reliquary/errors";
+import { requireActor } from "@/lib/reliquary/actor.server";
 import { errorResponse, handleOptions, json, readJson } from "@/lib/reliquary/http";
 import { collectionPatchSchema } from "@/lib/reliquary/schema";
 import {
@@ -12,18 +13,20 @@ export const Route = createFileRoute("/api/collections/$id")({
   server: {
     handlers: {
       OPTIONS: () => handleOptions(),
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
         try {
-          return json(await getCollection(params.id));
+          const userId = await requireActor(request);
+          return json(await getCollection(userId, params.id));
         } catch (err) {
           return errorResponse(err);
         }
       },
       PUT: async ({ params, request }) => patch(params.id, request),
       PATCH: async ({ params, request }) => patch(params.id, request),
-      DELETE: async ({ params }) => {
+      DELETE: async ({ params, request }) => {
         try {
-          await deleteCollection(params.id);
+          const userId = await requireActor(request);
+          await deleteCollection(userId, params.id);
           return json({ ok: true });
         } catch (err) {
           return errorResponse(err);
@@ -35,9 +38,10 @@ export const Route = createFileRoute("/api/collections/$id")({
 
 async function patch(id: string, request: Request) {
   try {
+    const userId = await requireActor(request);
     const body = await readJson(request);
     const parsed = collectionPatchSchema.parse(body);
-    return json(await updateCollection(id, parsed));
+    return json(await updateCollection(userId, id, parsed));
   } catch (err) {
     if (err && typeof err === "object" && "issues" in err) {
       return errorResponse(

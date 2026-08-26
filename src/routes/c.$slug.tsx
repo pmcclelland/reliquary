@@ -12,16 +12,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { requireSession } from "@/lib/auth/protect";
 import { deleteCollectionFn, getCollectionPage } from "@/lib/reliquary/functions";
+import type { Collection, Library } from "@/lib/reliquary/types";
 import { useState } from "react";
 
 export const Route = createFileRoute("/c/$slug")({
+  beforeLoad: ({ context }) => {
+    requireSession(context);
+  },
   loader: ({ params }) => getCollectionPage({ data: { slug: params.slug } }),
   component: CollectionPage,
 });
 
 function CollectionPage() {
-  const { collection, library } = Route.useLoaderData();
+  const { collection, library } = Route.useLoaderData() as {
+    collection: Collection;
+    library: Library;
+  };
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
   const artifacts = library.artifacts.filter(

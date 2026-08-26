@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ArtifactCard } from "@/components/artifact/card";
 import { AppShell } from "@/components/layout/app-shell";
 import { Input } from "@/components/ui/input";
+import { requireSession } from "@/lib/auth/protect";
 import { getLibrary } from "@/lib/reliquary/functions";
 import type { ArtifactSummary, Collection } from "@/lib/reliquary/types";
 
@@ -13,12 +14,18 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
-  loader: () => getLibrary(),
+  beforeLoad: ({ context }) => {
+    requireSession(context);
+  },
+  loader: async () => getLibrary(),
   component: Home,
 });
 
 function Home() {
-  const library = Route.useLoaderData();
+  const library = Route.useLoaderData() as {
+    collections: Collection[];
+    artifacts: ArtifactSummary[];
+  };
   const { q, tag } = Route.useSearch();
   const navigate = Route.useNavigate();
 
@@ -46,7 +53,7 @@ function Home() {
             onChange={(e) => {
               const value = e.target.value;
               void navigate({
-                search: (prev) => ({
+                search: (prev: { q?: string; tag?: string }) => ({
                   ...prev,
                   q: value.trim() ? value : undefined,
                 }),
@@ -64,7 +71,10 @@ function Home() {
               className="underline decoration-border underline-offset-4"
               onClick={() =>
                 void navigate({
-                  search: (prev) => ({ ...prev, tag: undefined }),
+                  search: (prev: { q?: string; tag?: string }) => ({
+                    ...prev,
+                    tag: undefined,
+                  }),
                 })
               }
             >

@@ -8,9 +8,16 @@
 import { stdin, stdout, stderr } from "node:process";
 
 const BASE = (process.env.RELIQUARY_URL || "").replace(/\/$/, "");
+const TOKEN = (process.env.RELIQUARY_TOKEN || "").trim();
 if (!BASE) {
   stderr.write(
-    "Reliquary MCP: set RELIQUARY_URL to the app origin, e.g. https://example.grok.me\n",
+    "Reliquary MCP: set RELIQUARY_URL to the app origin, e.g. https://reliquary.pmcclel.land\n",
+  );
+  process.exit(1);
+}
+if (!TOKEN) {
+  stderr.write(
+    "Reliquary MCP: set RELIQUARY_TOKEN to your personal token from /docs\n",
   );
   process.exit(1);
 }
@@ -135,6 +142,7 @@ async function api(path, init = {}) {
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      Authorization: `Bearer ${TOKEN}`,
       ...(init.headers || {}),
     },
   });

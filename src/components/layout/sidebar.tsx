@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { createCollectionFn } from "@/lib/reliquary/functions";
 import type { Library as LibraryData } from "@/lib/reliquary/types";
 import { cn } from "@/lib/utils";
+import { UserButton } from "@/lib/auth/gates";
 import { Wordmark } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -143,7 +144,8 @@ export function Sidebar({
         </Link>
       </nav>
 
-      <div className="shrink-0 border-t border-border px-2 py-2">
+      <div className="shrink-0 space-y-1 border-t border-border px-2 py-2">
+        <UserButton />
         <ThemeToggle variant="row" side="top" align="start" />
       </div>
 

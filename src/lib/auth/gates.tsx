@@ -57,33 +57,34 @@ export function UserButton() {
   if (!user) return null;
   const label = user.displayName ?? user.primaryEmail ?? "Account";
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2 px-1">
       {user.profileImageUrl ? (
         <img
           src={user.profileImageUrl}
           alt=""
-          className="h-8 w-8 rounded-full object-cover"
+          className="size-8 shrink-0 rounded-full object-cover"
         />
       ) : (
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-black/10 text-sm font-medium dark:bg-white/20">
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium text-fg">
           {label.charAt(0).toUpperCase()}
         </span>
       )}
-      <span className="text-sm font-medium">{label}</span>
-      {authEnabled && (
-        <button
-          type="button"
-          disabled={signingOut}
-          onClick={() => {
-            setSigningOut(true);
-            // Success navigates away; on failure re-enable so it can be retried.
-            void signOut().catch(() => setSigningOut(false));
-          }}
-          className="cursor-pointer text-sm underline-offset-4 opacity-70 hover:underline disabled:cursor-wait disabled:no-underline"
-        >
-          {signingOut ? "Signing out…" : "Sign out"}
-        </button>
-      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-fg">{label}</p>
+        {authEnabled && (
+          <button
+            type="button"
+            disabled={signingOut}
+            onClick={() => {
+              setSigningOut(true);
+              void signOut().catch(() => setSigningOut(false));
+            }}
+            className="text-xs text-muted hover:text-fg disabled:cursor-wait"
+          >
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

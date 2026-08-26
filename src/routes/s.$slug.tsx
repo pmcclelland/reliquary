@@ -7,11 +7,11 @@ import { ShareLinkDialog } from "@/components/artifact/share-dialog";
 import { Mark } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/reliquary/constants";
-import { getArtifact } from "@/lib/reliquary/functions";
+import { getPublicArtifact } from "@/lib/reliquary/functions";
 import { artifactShareUrl, copyText } from "@/lib/utils";
 
 export const Route = createFileRoute("/s/$slug")({
-  loader: ({ params }) => getArtifact({ data: { slug: params.slug } }),
+  loader: ({ params }) => getPublicArtifact({ data: { slug: params.slug } }),
   head: ({ loaderData }) => ({
     meta: [
       {
@@ -32,7 +32,7 @@ function SharePage() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   async function share() {
-    const url = artifactShareUrl(artifact.slug);
+    const url = artifactShareUrl(artifact.id);
     setShareUrl(url);
     if (await copyText(url)) {
       toast.success("Share link copied");

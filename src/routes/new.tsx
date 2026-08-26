@@ -5,9 +5,13 @@ import {
   type EditorValues,
 } from "@/components/artifact/editor-form";
 import { AppShell } from "@/components/layout/app-shell";
+import { requireSession } from "@/lib/auth/protect";
 import { createArtifactFn, getLibrary } from "@/lib/reliquary/functions";
 
 export const Route = createFileRoute("/new")({
+  beforeLoad: ({ context }) => {
+    requireSession(context);
+  },
   loader: () => getLibrary(),
   component: NewPage,
 });

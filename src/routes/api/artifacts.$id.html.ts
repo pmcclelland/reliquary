@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { corsHeaders, errorResponse, handleOptions } from "@/lib/reliquary/http";
-import { getArtifact } from "@/lib/reliquary/store.server";
+import { getPublicArtifact } from "@/lib/reliquary/store.server";
 
 export const Route = createFileRoute("/api/artifacts/$id/html")({
   server: {
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/artifacts/$id/html")({
       OPTIONS: () => handleOptions(),
       GET: async ({ params }) => {
         try {
-          const artifact = await getArtifact(params.id);
+          const artifact = await getPublicArtifact(params.id);
           return new Response(artifact.html, {
             headers: {
               ...corsHeaders(),

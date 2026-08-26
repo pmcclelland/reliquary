@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { corsHeaders, handleOptions, json } from "@/lib/reliquary/http";
+import { ReliquaryError } from "@/lib/reliquary/errors";
+import { requireActor } from "@/lib/reliquary/actor.server";
+import { corsHeaders, errorResponse, handleOptions, json } from "@/lib/reliquary/http";
 import { handleJsonRpc } from "@/lib/reliquary/mcp";
 
 export const Route = createFileRoute("/api/mcp")({
@@ -26,6 +28,16 @@ export const Route = createFileRoute("/api/mcp")({
         });
       },
       POST: async ({ request }) => {
+        let userId: string;
+        try {
+          userId = await requireActor(request);
+        } catch (err) {
+          return errorResponse(
+            err instanceof ReliquaryError
+              ? err
+              : new ReliquaryError("Unauthorized", 401, "UNAUTHORIZED"),
+          );
+        }
         let body: unknown = {};
         try {
           body = await request.json();
@@ -39,7 +51,7 @@ export const Route = createFileRoute("/api/mcp")({
             400,
           );
         }
-        const { payload, notification } = await handleJsonRpc(body);
+        const { payload, notification } = await handleJsonRpc(userId, body);
         if (notification || payload === null) {
           return new Response(null, {
             status: 202,

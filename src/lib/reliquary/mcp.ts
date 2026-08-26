@@ -150,8 +150,8 @@ function fail(id: JsonRpcId, code: number, message: string) {
   return { jsonrpc: "2.0", id, error: { code, message } };
 }
 
-function withShare<T extends { slug: string }>(artifact: T) {
-  return { ...artifact, sharePath: `/s/${artifact.slug}` };
+function withShare<T extends { id: string; slug: string }>(artifact: T) {
+  return { ...artifact, sharePath: `/s/${artifact.id}` };
 }
 
 function asArgs(params: unknown): Record<string, unknown> {
@@ -178,10 +178,14 @@ function textResult(data: unknown, isError = false) {
   };
 }
 
-async function callTool(name: string, args: Record<string, unknown>) {
+async function callTool(
+  userId: string,
+  name: string,
+  args: Record<string, unknown>,
+) {
   switch (name) {
     case "list_artifacts": {
-      const items = await listArtifacts({
+      const items = await listArtifacts(userId, {
         collection: typeof args.collection === "string" ? args.collection : undefined,
         tag: typeof args.tag === "string" ? args.tag : undefined,
         q: typeof args.q === "string" ? args.q : undefined,
@@ -191,11 +195,11 @@ async function callTool(name: string, args: Record<string, unknown>) {
     case "get_artifact": {
       const id = String(args.id ?? "");
       if (!id) throw new ReliquaryError("id is required");
-      return textResult(withShare(await getArtifact(id)));
+      return textResult(withShare(await getArtifact(userId, id)));
     }
     case "create_artifact": {
       const parsed = artifactCreateSchema.parse(args);
-      return textResult(withShare(await createArtifact(parsed)));
+      return textResult(withShare(await createArtifact(userId, parsed)));
     }
     case "update_artifact": {
       const id = String(args.id ?? "");
@@ -208,30 +212,33 @@ async function callTool(name: string, args: Record<string, unknown>) {
         collectionId:
           collection === "" || collection === null ? null : undefined,
       });
-      return textResult(withShare(await updateArtifact(id, patch)));
+      return textResult(withShare(await updateArtifact(userId, id, patch)));
     }
     case "delete_artifact": {
       const id = String(args.id ?? "");
       if (!id) throw new ReliquaryError("id is required");
-      return textResult(await deleteArtifact(id));
+      return textResult(await deleteArtifact(userId, id));
     }
     case "list_collections":
-      return textResult({ collections: await listCollections() });
+      return textResult({ collections: await listCollections(userId) });
     case "create_collection": {
       const parsed = collectionCreateSchema.parse(args);
-      return textResult(await createCollection(parsed));
+      return textResult(await createCollection(userId, parsed));
     }
     case "delete_collection": {
       const id = String(args.id ?? "");
       if (!id) throw new ReliquaryError("id is required");
-      return textResult(await deleteCollection(id));
+      return textResult(await deleteCollection(userId, id));
     }
     default:
       throw new ReliquaryError(`Unknown tool: ${name}`, 404, "NOT_FOUND");
   }
 }
 
-export async function handleJsonRpc(body: unknown): Promise<{
+export async function handleJsonRpc(
+  userId: string,
+  body: unknown,
+): Promise<{
   payload: unknown | null;
   notification: boolean;
 }> {
@@ -239,18 +246,18 @@ export async function handleJsonRpc(body: unknown): Promise<{
     const responses = [];
     let notifications = 0;
     for (const item of body) {
-      const r = await handleOne(item);
+      const r = await handleOne(userId, item);
       if (r === null) notifications += 1;
       else responses.push(r);
     }
     if (responses.length === 0) return { payload: null, notification: true };
     return { payload: responses, notification: notifications === body.length };
   }
-  const one = await handleOne(body);
+  const one = await handleOne(userId, body);
   return { payload: one, notification: one === null };
 }
 
-async function handleOne(raw: unknown): Promise<unknown | null> {
+async function handleOne(userId: string, raw: unknown): Promise<unknown | null> {
   if (!raw || typeof raw !== "object") {
     return fail(null, -32600, "Invalid request");
   }
@@ -287,7 +294,7 @@ async function handleOne(raw: unknown): Promise<unknown | null> {
         const name = toolName(req.params);
         const args = asArgs(req.params);
         try {
-          const result = await callTool(name, args);
+          const result = await callTool(userId, name, args);
           return ok(id, result);
         } catch (err) {
           const message = err instanceof Error ? err.message : "Tool failed";
