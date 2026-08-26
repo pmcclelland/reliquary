@@ -169,7 +169,7 @@ export function Sidebar({
             A shelf for related artifacts. You can move pieces later.
           </DialogDescription>
           <form className="mt-4 space-y-3" onSubmit={onCreateCollection}>
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               <Label htmlFor="col-title">Title</Label>
               <Input
                 id="col-title"
@@ -179,7 +179,7 @@ export function Sidebar({
                 autoFocus
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               <Label htmlFor="col-desc">Description</Label>
               <Input
                 id="col-desc"

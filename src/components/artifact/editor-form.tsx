@@ -108,7 +108,7 @@ export function EditorForm({
             id="col"
             value={collectionId}
             onChange={(e) => setCollectionId(e.target.value)}
-            className="h-10 w-full rounded-md bg-surface px-3 text-sm shadow-border"
+            className="h-10 w-full rounded-md bg-field px-3 text-sm text-fg shadow-border"
           >
             <option value="">Unfiled</option>
             {collections.map((c) => (
@@ -231,7 +231,7 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2.5">
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
     </div>

@@ -137,7 +137,7 @@ function DocsPage() {
           <p className="text-xs font-medium tracking-[0.14em] text-subtle uppercase">
             New token
           </p>
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <Label htmlFor="token-name">Name</Label>
             <Input
               id="token-name"

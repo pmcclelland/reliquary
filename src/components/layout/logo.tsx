@@ -49,7 +49,7 @@ export function Wordmark({
       )}
     >
       <Mark className={markClassName} />
-      <span className="-translate-y-px leading-none">{APP_NAME}</span>
+      <span className="reliquary-wordmark-name">{APP_NAME}</span>
     </span>
   );
 }

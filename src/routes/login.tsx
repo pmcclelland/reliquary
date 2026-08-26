@@ -104,7 +104,7 @@ function Login() {
             {emailOpen && (
               <form className="space-y-3 pt-1" onSubmit={onEmail}>
                 {mode === "signup" && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2.5">
                     <Label htmlFor="name">Name</Label>
                     <Input
                       id="name"
@@ -115,7 +115,7 @@ function Login() {
                     />
                   </div>
                 )}
-                <div className="space-y-1.5">
+                <div className="space-y-2.5">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -127,7 +127,7 @@ function Login() {
                     autoComplete="email"
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2.5">
                   <Label htmlFor="password">Password</Label>
                   <Input
                     id="password"
