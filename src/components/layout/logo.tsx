@@ -48,7 +48,7 @@ export function Wordmark({
         className,
       )}
     >
-      <Mark className={markClassName} />
+      <Mark className={cn("reliquary-wordmark-mark", markClassName)} />
       <span className="reliquary-wordmark-name">{APP_NAME}</span>
     </span>
   );

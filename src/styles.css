@@ -138,9 +138,17 @@ html[data-theme="dark"] {
   animation: reliquary-enter 400ms var(--ease-smooth-out) 80ms both;
 }
 
-/* Newsreader sits high in its em box; shift the name so its x-height
-   meets the mark’s center instead of lining up along the top edge. */
+/* Optical lock: mark center = midpoint of Reliquary’s cap height
+   (halfway from baseline to the top of the R). items-center +
+   line-height:1 centers the mark on the name’s em box; Newsreader’s
+   cap midpoint sits ~0.14cap above that, so the mark is raised in
+   cap units — same lock at text-lg/size-7, text-base/size-6, and
+   text-2xl/size-8. Never translate the name down. */
 .reliquary-wordmark-name {
   line-height: 1;
-  translate: 0 0.2em;
+}
+
+.reliquary-wordmark-mark {
+  translate: 0 -0.1em;
+  translate: 0 -0.14cap;
 }
