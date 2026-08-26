@@ -15,8 +15,8 @@ export type ResolvedTheme = "light" | "dark";
 const STORAGE_KEY = "reliquary-theme";
 
 export const THEME_COLORS: Record<ResolvedTheme, string> = {
-  light: "#f3efe6",
-  dark: "#14110e",
+  light: "#efe8d8",
+  dark: "#12100e",
 };
 
 export const themeBootstrapScript = `(function(){try{var s=localStorage.getItem(${JSON.stringify(STORAGE_KEY)});var d=s==="dark"||(s!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);var r=d?"dark":"light";var e=document.documentElement;e.dataset.theme=r;e.classList.toggle("dark",d);e.style.colorScheme=r;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",d?"${THEME_COLORS.dark}":"${THEME_COLORS.light}");}catch(t){}})();`;

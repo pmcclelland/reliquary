@@ -23,7 +23,7 @@ export function AppShell({
 
   return (
     <div className="flex h-dvh bg-bg text-fg">
-      <aside className="hidden h-full w-64 shrink-0 border-r border-border bg-bg md:flex md:flex-col">
+      <aside className="hidden h-full w-64 shrink-0 border-r border-border bg-surface md:flex md:flex-col">
         <Sidebar
           library={library}
           activeSlug={activeSlug}
@@ -39,7 +39,7 @@ export function AppShell({
             aria-label="Close menu"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative h-full w-72 max-w-[85vw] bg-bg shadow-border">
+          <aside className="relative h-full w-72 max-w-[85vw] bg-surface shadow-border">
             <Sidebar
               library={library}
               activeSlug={activeSlug}
@@ -50,8 +50,8 @@ export function AppShell({
         </div>
       )}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
-        <header className="relative grid h-14 shrink-0 grid-cols-[minmax(2.5rem,1fr)_auto_minmax(2.5rem,1fr)] items-center border-b border-border px-3 md:hidden">
+      <div className="reliquary-stage flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+        <header className="relative grid h-14 shrink-0 grid-cols-[minmax(2.5rem,1fr)_auto_minmax(2.5rem,1fr)] items-center border-b border-border bg-surface px-3 md:hidden">
           <div className="flex items-center justify-start">
             <Button
               variant="ghost"
