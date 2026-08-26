@@ -96,14 +96,14 @@ export function Sidebar({
             {library.artifacts.length}
           </span>
         </SideLink>
-        <div className="mt-4 flex items-center justify-between px-2 pb-1">
+        <div className="relative mt-4 px-2 pb-1">
           <p className="text-[11px] font-medium tracking-[0.16em] text-subtle uppercase">
             Collections
           </p>
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex size-8 items-center justify-center rounded-sm text-muted hover:bg-surface-muted hover:text-fg"
+            className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted hover:bg-surface-muted hover:text-fg after:absolute after:-inset-1 after:content-['']"
             aria-label="New collection"
           >
             <FolderPlus className="size-3.5" />

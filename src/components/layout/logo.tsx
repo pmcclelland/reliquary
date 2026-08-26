@@ -44,11 +44,11 @@ export function Wordmark({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2.5 font-serif text-lg leading-none tracking-tight",
+        "inline-flex items-baseline gap-2.5 font-serif text-lg leading-none tracking-tight",
         className,
       )}
     >
-      <Mark className={markClassName} />
+      <Mark className={cn("reliquary-wordmark-mark", markClassName)} />
       <span className="reliquary-wordmark-name">{APP_NAME}</span>
     </span>
   );

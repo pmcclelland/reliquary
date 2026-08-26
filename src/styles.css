@@ -138,9 +138,16 @@ html[data-theme="dark"] {
   animation: reliquary-enter 400ms var(--ease-smooth-out) 80ms both;
 }
 
-/* Newsreader sits high in its em box; shift the name so its x-height
-   meets the mark’s center instead of lining up along the top edge. */
+/* Optical lock: mark center = midpoint of cap height (baseline → top of R).
+   items-baseline parks the SVG’s bottom on the name’s baseline; the mark
+   then shifts so its center sits 0.5cap above that line. `cap` tracks
+   Newsreader; `%` tracks the mark’s own size (size-7 / size-6 / size-8).
+   Never translate the name down. */
 .reliquary-wordmark-name {
   line-height: 1;
-  translate: 0 0.2em;
+}
+
+.reliquary-wordmark-mark {
+  translate: 0 calc(-50% + 0.355em);
+  translate: 0 calc(-50% + 0.5cap);
 }
