@@ -5,7 +5,7 @@ import { Mark } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authClient, authEnabled } from "@/lib/auth/client";
+import { authClient, authEnabled, signInWithGoogle } from "@/lib/auth/client";
 import { redirectIfSignedIn } from "@/lib/auth/protect";
 import { getAuthOptions } from "@/lib/reliquary/functions";
 import { APP_NAME, APP_TAGLINE } from "@/lib/reliquary/constants";
@@ -28,13 +28,10 @@ function Login() {
   async function onGoogle() {
     setBusy(true);
     try {
-      const { data, error } = await authClient.signIn.social({
-        provider: "google",
+      await signInWithGoogle({
         callbackURL: "/",
         errorCallbackURL: "/login",
       });
-      if (error) throw new Error(error.message ?? "Google sign-in failed");
-      if (data?.url) window.location.href = data.url;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setBusy(false);

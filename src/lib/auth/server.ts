@@ -110,7 +110,7 @@ const PUBLIC_ORIGINS: string[] = [
 ];
 const googleClientId = env("GOOGLE_CLIENT_ID");
 const googleClientSecret = env("GOOGLE_CLIENT_SECRET");
-const googleConfigured = Boolean(googleClientId && googleClientSecret);
+const googleEnabled = Boolean(googleClientId && googleClientSecret);
 const baseURL = explicitBaseURL ?? {
   // Include loopback hosts so dynamic baseURL resolves for local email/password
   // (not only the preview wildcard).
@@ -206,7 +206,7 @@ export const auth = betterAuth({
       trustedProviders: [
         ...GROK_PROVIDERS.map((p) => p.providerId),
         GATE_PROVIDER_ID,
-        "google",
+        ...(googleEnabled ? ["google"] : []),
       ],
       // X's synthetic email is never "verified", so don't gate linking on the
       // local user's email-verified state.
@@ -223,14 +223,15 @@ export const auth = betterAuth({
   // Local email/password — toggled only via `./email-password` (not a plugin).
   ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
 
-  // Native Google on this app's origin (custom domain / Vercel). The Grok
-  // broker still covers sandbox preview Google when GROK_AUTH_* is injected.
-  ...(googleConfigured
+  // Native Google (self-hosted Vercel). The Grok broker only accepts
+  // grok-sandbox / grok.me callbacks, so deployed custom domains sign in here.
+  ...(googleEnabled
     ? {
         socialProviders: {
           google: {
             clientId: googleClientId as string,
             clientSecret: googleClientSecret as string,
+            prompt: "select_account",
           },
         },
       }
