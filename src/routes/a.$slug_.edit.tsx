@@ -7,7 +7,7 @@ import {
 import { AppShell } from "@/components/layout/app-shell";
 import { getArtifact, getLibrary, updateArtifactFn } from "@/lib/reliquary/functions";
 
-export const Route = createFileRoute("/a/$slug/edit")({
+export const Route = createFileRoute("/a/$slug_/edit")({
   loader: async ({ params }) => {
     const [library, artifact] = await Promise.all([
       getLibrary(),

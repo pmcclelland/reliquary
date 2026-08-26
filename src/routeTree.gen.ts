@@ -18,7 +18,7 @@ import { Route as ApiCollectionsRouteImport } from './routes/api/collections'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as CSlugRouteImport } from './routes/c.$slug'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
-import { Route as ASlugEditRouteImport } from './routes/a.$slug.edit'
+import { Route as ASlugEditRouteImport } from './routes/a.$slug_.edit'
 import { Route as ApiArtifactsIdRouteImport } from './routes/api/artifacts.$id'
 import { Route as ApiCollectionsIdRouteImport } from './routes/api/collections.$id'
 import { Route as ApiArtifactsIdHtmlRouteImport } from './routes/api/artifacts.$id.html'
@@ -69,9 +69,9 @@ const SSlugRoute = SSlugRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ASlugEditRoute = ASlugEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => ASlugRoute,
+  id: '/a/$slug_/edit',
+  path: '/a/$slug/edit',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiArtifactsIdRoute = ApiArtifactsIdRouteImport.update({
   id: '/$id',
@@ -93,7 +93,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
   '/new': typeof NewRoute
-  '/a/$slug': typeof ASlugRouteWithChildren
+  '/a/$slug': typeof ASlugRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/collections': typeof ApiCollectionsRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
@@ -108,7 +108,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
   '/new': typeof NewRoute
-  '/a/$slug': typeof ASlugRouteWithChildren
+  '/a/$slug': typeof ASlugRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/collections': typeof ApiCollectionsRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
@@ -124,13 +124,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
   '/new': typeof NewRoute
-  '/a/$slug': typeof ASlugRouteWithChildren
+  '/a/$slug': typeof ASlugRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/collections': typeof ApiCollectionsRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
   '/c/$slug': typeof CSlugRoute
   '/s/$slug': typeof SSlugRoute
-  '/a/$slug/edit': typeof ASlugEditRoute
+  '/a/$slug_/edit': typeof ASlugEditRoute
   '/api/artifacts/$id': typeof ApiArtifactsIdRouteWithChildren
   '/api/collections/$id': typeof ApiCollectionsIdRoute
   '/api/artifacts/$id/html': typeof ApiArtifactsIdHtmlRoute
@@ -177,7 +177,7 @@ export interface FileRouteTypes {
     | '/api/mcp'
     | '/c/$slug'
     | '/s/$slug'
-    | '/a/$slug/edit'
+    | '/a/$slug_/edit'
     | '/api/artifacts/$id'
     | '/api/collections/$id'
     | '/api/artifacts/$id/html'
@@ -187,12 +187,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DocsRoute: typeof DocsRoute
   NewRoute: typeof NewRoute
-  ASlugRoute: typeof ASlugRouteWithChildren
+  ASlugRoute: typeof ASlugRoute
   ApiArtifactsRoute: typeof ApiArtifactsRouteWithChildren
   ApiCollectionsRoute: typeof ApiCollectionsRouteWithChildren
   ApiMcpRoute: typeof ApiMcpRoute
   CSlugRoute: typeof CSlugRoute
   SSlugRoute: typeof SSlugRoute
+  ASlugEditRoute: typeof ASlugEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -260,12 +261,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/a/$slug/edit': {
-      id: '/a/$slug/edit'
-      path: '/edit'
+    '/a/$slug_/edit': {
+      id: '/a/$slug_/edit'
+      path: '/a/$slug/edit'
       fullPath: '/a/$slug/edit'
       preLoaderRoute: typeof ASlugEditRouteImport
-      parentRoute: typeof ASlugRoute
+      parentRoute: typeof rootRouteImport
     }
     '/api/artifacts/$id': {
       id: '/api/artifacts/$id'
@@ -290,16 +291,6 @@ declare module '@tanstack/react-router' {
     }
   }
 }
-
-interface ASlugRouteChildren {
-  ASlugEditRoute: typeof ASlugEditRoute
-}
-
-const ASlugRouteChildren: ASlugRouteChildren = {
-  ASlugEditRoute: ASlugEditRoute,
-}
-
-const ASlugRouteWithChildren = ASlugRoute._addFileChildren(ASlugRouteChildren)
 
 interface ApiArtifactsIdRouteChildren {
   ApiArtifactsIdHtmlRoute: typeof ApiArtifactsIdHtmlRoute
@@ -341,12 +332,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DocsRoute: DocsRoute,
   NewRoute: NewRoute,
-  ASlugRoute: ASlugRouteWithChildren,
+  ASlugRoute: ASlugRoute,
   ApiArtifactsRoute: ApiArtifactsRouteWithChildren,
   ApiCollectionsRoute: ApiCollectionsRouteWithChildren,
   ApiMcpRoute: ApiMcpRoute,
   CSlugRoute: CSlugRoute,
   SSlugRoute: SSlugRoute,
+  ASlugEditRoute: ASlugEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
