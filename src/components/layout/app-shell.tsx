@@ -51,7 +51,7 @@ export function AppShell({
       )}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
-        <header className="relative grid h-14 grid-cols-[minmax(2.5rem,1fr)_auto_minmax(2.5rem,1fr)] items-center border-b border-border px-3 md:hidden">
+        <header className="relative grid h-14 shrink-0 grid-cols-[minmax(2.5rem,1fr)_auto_minmax(2.5rem,1fr)] items-center border-b border-border px-3 md:hidden">
           <div className="flex items-center justify-start">
             <Button
               variant="ghost"
@@ -67,7 +67,7 @@ export function AppShell({
             className="flex items-center justify-center leading-none whitespace-nowrap text-fg"
           >
             <Wordmark
-              className="shrink-0 gap-2 text-base [translate:0_0.07cap]"
+              className="shrink-0 gap-2 text-base [translate:0_0.14cap]"
               markClassName="size-6"
             />
           </Link>
