@@ -96,18 +96,18 @@ export function Sidebar({
             {library.artifacts.length}
           </span>
         </SideLink>
-        <div className="relative mt-4 px-2 pb-1">
-          <p className="text-[11px] font-medium tracking-[0.16em] text-subtle uppercase">
+        <div className="mt-4 px-2 pb-1">
+          <div className="relative text-[11px] font-medium tracking-[0.16em] text-subtle uppercase">
             Collections
-          </p>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted hover:bg-surface-muted hover:text-fg after:absolute after:-inset-1 after:content-['']"
-            aria-label="New collection"
-          >
-            <FolderPlus className="size-3.5" />
-          </button>
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="absolute top-1/2 right-0 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted hover:bg-surface-muted hover:text-fg after:absolute after:-inset-1 after:content-['']"
+              aria-label="New collection"
+            >
+              <FolderPlus className="size-3.5" />
+            </button>
+          </div>
         </div>
         {library.collections.map((col) => (
           <Link
