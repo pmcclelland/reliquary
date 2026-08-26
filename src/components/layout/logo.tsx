@@ -1,10 +1,11 @@
+import { APP_NAME } from "@/lib/reliquary/constants";
 import { cn } from "@/lib/utils";
 
 export function Mark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 32 32"
-      className={cn("size-7", className)}
+      className={cn("block size-7 shrink-0", className)}
       aria-hidden="true"
     >
       <rect
@@ -33,11 +34,22 @@ export function Mark({ className }: { className?: string }) {
   );
 }
 
-export function Wordmark({ className }: { className?: string }) {
+export function Wordmark({
+  className,
+  markClassName,
+}: {
+  className?: string;
+  markClassName?: string;
+}) {
   return (
-    <span className={cn("flex items-center gap-2.5 text-fg", className)}>
-      <Mark />
-      <span className="font-serif text-lg tracking-tight">Reliquary</span>
+    <span
+      className={cn(
+        "inline-flex items-center gap-2.5 font-serif text-lg leading-none tracking-tight",
+        className,
+      )}
+    >
+      <Mark className={markClassName} />
+      <span className="-translate-y-px leading-none">{APP_NAME}</span>
     </span>
   );
 }

@@ -33,6 +33,7 @@ export function Sidebar({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
 
   const tags = useMemo(() => {
@@ -50,9 +51,12 @@ export function Sidebar({
     if (!title.trim()) return;
     setBusy(true);
     try {
-      const col = await createCollectionFn({ data: { title: title.trim() } });
+      const col = await createCollectionFn({
+        data: { title: title.trim(), description: description.trim() },
+      });
       setOpen(false);
       setTitle("");
+      setDescription("");
       await router.invalidate({ sync: true });
       await router.navigate({
         to: "/c/$slug",
@@ -149,7 +153,16 @@ export function Sidebar({
         <ThemeToggle variant="row" side="top" align="start" />
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) {
+            setTitle("");
+            setDescription("");
+          }
+        }}
+      >
         <DialogContent>
           <DialogTitle>New collection</DialogTitle>
           <DialogDescription>
@@ -164,6 +177,15 @@ export function Sidebar({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Motion studies"
                 autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="col-desc">Description</Label>
+              <Input
+                id="col-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Self-contained studies in animation and time."
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">

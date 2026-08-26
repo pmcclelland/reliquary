@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ArtifactFrame } from "@/components/artifact/frame";
 import { ShareLinkDialog } from "@/components/artifact/share-dialog";
-import { Mark } from "@/components/layout/logo";
+import { Wordmark } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/reliquary/constants";
 import { getPublicArtifact } from "@/lib/reliquary/functions";
@@ -48,8 +48,7 @@ function SharePage() {
           aria-label="Back to Reliquary"
           className="flex h-11 shrink-0 items-center gap-2 text-fg hover:text-accent"
         >
-          <Mark className="size-5" />
-          <span className="font-serif text-sm tracking-tight">Reliquary</span>
+          <Wordmark className="gap-2 text-sm" markClassName="size-5" />
         </Link>
         <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
         <p className="min-w-0 flex-1 truncate text-sm text-muted">

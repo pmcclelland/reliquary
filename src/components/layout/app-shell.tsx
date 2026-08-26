@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import type { Library } from "@/lib/reliquary/types";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "./command-palette";
-import { Mark } from "./logo";
+import { Wordmark } from "./logo";
 import { Sidebar } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -60,9 +60,8 @@ export function AppShell({
           >
             <Menu className="size-5" />
           </Button>
-          <Link to="/" className="flex items-center gap-2 font-serif text-base">
-            <Mark className="size-6" />
-            Reliquary
+          <Link to="/" className="text-fg">
+            <Wordmark className="gap-2 text-base" markClassName="size-6" />
           </Link>
           <div className="ml-auto">
             <ThemeToggle />

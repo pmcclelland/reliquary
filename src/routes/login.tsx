@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Mark } from "@/components/layout/logo";
+import { Wordmark } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient, authEnabled, signInWithGoogle } from "@/lib/auth/client";
 import { redirectIfSignedIn } from "@/lib/auth/protect";
 import { getAuthOptions } from "@/lib/reliquary/functions";
-import { APP_NAME, APP_TAGLINE } from "@/lib/reliquary/constants";
+import { APP_TAGLINE } from "@/lib/reliquary/constants";
 
 export const Route = createFileRoute("/login")({
   beforeLoad: ({ context }) => redirectIfSignedIn(context),
@@ -68,10 +68,7 @@ function Login() {
   return (
     <main className="grid min-h-dvh place-items-center bg-bg px-6 text-fg">
       <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2.5 text-fg">
-          <Mark className="size-8" />
-          <span className="font-serif text-2xl tracking-tight">{APP_NAME}</span>
-        </div>
+        <Wordmark className="text-2xl" markClassName="size-8" />
         <p className="mt-3 text-sm text-muted">{APP_TAGLINE}</p>
         <h1 className="mt-8 font-serif text-3xl tracking-tight">Sign in</h1>
         <p className="mt-2 text-sm text-muted">
