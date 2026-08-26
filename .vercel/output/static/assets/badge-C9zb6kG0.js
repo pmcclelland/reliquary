@@ -1,0 +1,1 @@
+import{N as e}from"./preload-helper-DLxaniGD.js";import{w as t}from"./dialog-Hfu7sbBg.js";var n=e();function r({className:e,...r}){return(0,n.jsx)(`span`,{className:t(`inline-flex items-center rounded-sm bg-chip px-2 py-0.5 text-xs font-medium text-muted`,e),...r})}export{r as t};

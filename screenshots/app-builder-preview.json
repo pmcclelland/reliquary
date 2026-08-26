@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Reliquary",
+      "hasCanvas": false,
+      "bodyTextLen": 843,
+      "bodyTextHash": "75505ce365380251750bef5cb9dac2cb6a46511f8fc2753f6e4b5f8fb6471a4a",
+      "bodyTextPrefix": "Reliquary New artifact LIBRARY All artifacts 4 COLLECTIONS Guide",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Reliquary",
+      "hasCanvas": false,
+      "bodyTextLen": 708,
+      "bodyTextHash": "99e51304680c4894efea95b4b4db8d0b51a3b49537b9e3711bc48b89686ed569",
+      "bodyTextPrefix": "Reliquary LIBRARY A wiki of living artifacts Self-contained HTML",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
