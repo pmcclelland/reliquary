@@ -5,13 +5,9 @@ import { authMiddleware } from "@/lib/auth/middleware";
 import { ReliquaryError } from "./errors";
 import { artifactCreateSchema, artifactPatchSchema, collectionCreateSchema } from "./schema";
 import type { Artifact, Collection, Library } from "./types";
+import type { McpTokenMeta } from "./mcp-token.server";
 
 type AuthOptions = { google: boolean; email: boolean };
-type McpTokenMeta = {
-  tokenPrefix: string;
-  createdAt: string;
-  token?: string;
-};
 
 function rethrow(err: unknown): never {
   if (err instanceof ReliquaryError && err.code === "NOT_FOUND") {
@@ -134,16 +130,33 @@ export const deleteCollectionFn = createServerFn({ method: "POST" })
     }
   });
 
-export const getMcpTokenFn = createServerFn({ method: "GET" })
+export const listMcpTokensFn = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
-  .handler(async ({ context }): Promise<McpTokenMeta | null> => {
-    const { getMcpTokenMeta } = await import("./mcp-token.server");
-    return getMcpTokenMeta(context.userId);
+  .handler(async ({ context }): Promise<McpTokenMeta[]> => {
+    const { listMcpTokens } = await import("./mcp-token.server");
+    return listMcpTokens(context.userId);
   });
 
-export const issueMcpTokenFn = createServerFn({ method: "POST" })
+export const createMcpTokenFn = createServerFn({ method: "POST" })
+  .validator(z.object({ name: z.string().max(40) }))
   .middleware([authMiddleware])
-  .handler(async ({ context }): Promise<McpTokenMeta> => {
-    const { issueMcpToken } = await import("./mcp-token.server");
-    return issueMcpToken(context.userId);
+  .handler(async ({ context, data }): Promise<McpTokenMeta> => {
+    const { createMcpToken } = await import("./mcp-token.server");
+    return createMcpToken(context.userId, data.name);
+  });
+
+export const rotateMcpTokenFn = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().min(1) }))
+  .middleware([authMiddleware])
+  .handler(async ({ context, data }): Promise<McpTokenMeta> => {
+    const { rotateMcpToken } = await import("./mcp-token.server");
+    return rotateMcpToken(context.userId, data.id);
+  });
+
+export const revokeMcpTokenFn = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().min(1) }))
+  .middleware([authMiddleware])
+  .handler(async ({ context, data }): Promise<void> => {
+    const { revokeMcpToken } = await import("./mcp-token.server");
+    await revokeMcpToken(context.userId, data.id);
   });

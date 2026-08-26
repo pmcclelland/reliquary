@@ -1,15 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { requireSession } from "@/lib/auth/protect";
 import {
+  createMcpTokenFn,
   getLibrary,
-  getMcpTokenFn,
-  issueMcpTokenFn,
+  listMcpTokensFn,
+  revokeMcpTokenFn,
+  rotateMcpTokenFn,
 } from "@/lib/reliquary/functions";
 import { copyText } from "@/lib/utils";
+
+type TokenRow = {
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  createdAt: string;
+  token?: string;
+};
 
 export const Route = createFileRoute("/docs")({
   beforeLoad: ({ context }) => {
@@ -22,31 +43,70 @@ export const Route = createFileRoute("/docs")({
 function DocsPage() {
   const library = Route.useLoaderData();
   const [origin, setOrigin] = useState("");
-  const [tokenMeta, setTokenMeta] = useState<{
-    tokenPrefix: string;
-    createdAt: string;
-    token?: string;
-  } | null>(null);
-  const [busyToken, setBusyToken] = useState(false);
+  const [tokens, setTokens] = useState<TokenRow[]>([]);
+  const [name, setName] = useState("");
+  const [revealed, setRevealed] = useState<TokenRow | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [revokeId, setRevokeId] = useState<string | null>(null);
   useEffect(() => {
     setOrigin(window.location.origin);
-    void getMcpTokenFn().then(setTokenMeta).catch(() => setTokenMeta(null));
+    void listMcpTokensFn()
+      .then(setTokens)
+      .catch(() => setTokens([]));
   }, []);
   const mcpUrl = origin ? `${origin}/api/mcp` : "/api/mcp";
-  const revealed = tokenMeta?.token;
+  const revealedSecret = revealed?.token;
+  const revokeTarget = tokens.find((row) => row.id === revokeId);
 
-  async function mintToken() {
-    setBusyToken(true);
+  async function remember(next: TokenRow) {
+    setTokens((rows) => {
+      const rest = rows.filter((row) => row.id !== next.id);
+      return [{ ...next, token: undefined }, ...rest];
+    });
+    setRevealed(next);
+    if (next.token && (await copyText(next.token))) {
+      toast.success("MCP token copied");
+    }
+  }
+
+  async function onCreate(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
     try {
-      const next = await issueMcpTokenFn();
-      setTokenMeta(next);
-      if (next.token && (await copyText(next.token))) {
-        toast.success("MCP token copied");
-      }
+      const next = await createMcpTokenFn({ data: { name } });
+      setName("");
+      await remember(next);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not issue token");
     } finally {
-      setBusyToken(false);
+      setBusy(false);
+    }
+  }
+
+  async function onRotate(id: string) {
+    setBusy(true);
+    try {
+      await remember(await rotateMcpTokenFn({ data: { id } }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not rotate token");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onRevoke() {
+    if (!revokeId) return;
+    setBusy(true);
+    try {
+      await revokeMcpTokenFn({ data: { id: revokeId } });
+      setTokens((rows) => rows.filter((row) => row.id !== revokeId));
+      setRevealed((row) => (row?.id === revokeId ? null : row));
+      setRevokeId(null);
+      toast.success("Token revoked");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not revoke token");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -66,43 +126,85 @@ function DocsPage() {
 
         <h2 className="mt-12 font-serif text-2xl tracking-tight">MCP</h2>
         <p className="mt-2 text-sm text-muted">
-          Streamable HTTP endpoint, scoped to your library. Each account has a
-          personal bearer token.
+          Streamable HTTP endpoint, scoped to your library. Issue a named token
+          per agent so you can revoke one without disconnecting the others.
         </p>
         <Pre>{mcpUrl}</Pre>
-        <div className="mt-6 rounded-lg bg-surface p-4 shadow-border">
+        <form
+          className="mt-6 space-y-3 rounded-lg bg-surface p-4 shadow-border"
+          onSubmit={(event) => void onCreate(event)}
+        >
           <p className="text-xs font-medium tracking-[0.14em] text-subtle uppercase">
-            Your token
+            New token
           </p>
-          {revealed ? (
-            <Pre>{revealed}</Pre>
-          ) : tokenMeta ? (
-            <p className="mt-2 font-mono text-sm text-fg">
-              {tokenMeta.tokenPrefix}
-              <span className="ml-2 text-xs text-subtle">
-                issued {new Date(tokenMeta.createdAt).toLocaleDateString()}
-              </span>
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-muted">
-              No token yet. Issue one to connect an agent.
-            </p>
-          )}
-          {revealed ? (
-            <p className="mt-2 text-xs text-muted">
-              Copy it now — Reliquary will not show the full token again.
-            </p>
-          ) : null}
-          <Button
-            className="mt-4"
-            type="button"
-            variant={tokenMeta && !revealed ? "secondary" : "default"}
-            disabled={busyToken}
-            onClick={() => void mintToken()}
-          >
-            {tokenMeta && !revealed ? "Rotate token" : "Issue token"}
+          <div className="space-y-1.5">
+            <Label htmlFor="token-name">Name</Label>
+            <Input
+              id="token-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Cursor, Claude, Grok…"
+              maxLength={40}
+              autoComplete="off"
+            />
+          </div>
+          <Button type="submit" disabled={busy}>
+            Add token
           </Button>
-        </div>
+        </form>
+        {revealedSecret ? (
+          <div className="mt-4 rounded-lg bg-surface p-4 shadow-border">
+            <p className="text-xs font-medium tracking-[0.14em] text-subtle uppercase">
+              {revealed?.name} — copy now
+            </p>
+            <Pre>{revealedSecret}</Pre>
+            <p className="mt-2 text-xs text-muted">
+              Reliquary will not show the full token again.
+            </p>
+          </div>
+        ) : null}
+        <ul className="mt-4 space-y-2">
+          {tokens.length === 0 ? (
+            <li className="text-sm text-muted">
+              No tokens yet. Add one for each agent you want to connect.
+            </li>
+          ) : (
+            tokens.map((row) => (
+              <li
+                key={row.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3 shadow-border"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-fg">{row.name}</p>
+                  <p className="mt-0.5 font-mono text-xs text-subtle">
+                    {row.tokenPrefix}
+                    <span className="ml-2 font-sans">
+                      {new Date(row.createdAt).toLocaleDateString()}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => void onRotate(row.id)}
+                  >
+                    Rotate
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => setRevokeId(row.id)}
+                  >
+                    Revoke
+                  </Button>
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
         <p className="mt-4 text-sm text-muted">
           Cursor / Claude Code HTTP config:
         </p>
@@ -111,7 +213,7 @@ function DocsPage() {
     "reliquary": {
       "url": "${mcpUrl}",
       "headers": {
-        "Authorization": "Bearer ${revealed || "rly_YOUR_TOKEN"}"
+        "Authorization": "Bearer ${revealedSecret || "rly_YOUR_TOKEN"}"
       }
     }
   }
@@ -131,6 +233,12 @@ node mcp/server.mjs`}</Pre>
           <code className="font-mono text-xs">list_collections</code>,{" "}
           <code className="font-mono text-xs">create_collection</code>,{" "}
           <code className="font-mono text-xs">delete_collection</code>.
+        </p>
+        <p className="mt-4 text-sm text-muted">
+          Agent skill:{" "}
+          <code className="font-mono text-xs">skills/create-relic/SKILL.md</code>
+          . Slash <code className="font-mono text-xs">/create-relic</code> or
+          say “file this as a relic.”
         </p>
 
         <h2 className="mt-12 font-serif text-2xl tracking-tight">REST</h2>
@@ -184,6 +292,33 @@ DELETE /api/collections/:id`}</Pre>
   return <button onClick={() => setN(n + 1)}>{n}</button>;
 }`}</Pre>
       </article>
+      <AlertDialog
+        open={Boolean(revokeId)}
+        onOpenChange={(open) => {
+          if (!open) setRevokeId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>Revoke this token?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {revokeTarget
+              ? `${revokeTarget.name} will stop working immediately. Other tokens stay connected.`
+              : "This token will stop working immediately."}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                void onRevoke();
+              }}
+            >
+              Revoke
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }

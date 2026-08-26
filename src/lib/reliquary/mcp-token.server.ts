@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getSql } from "@/lib/db";
+import { ReliquaryError } from "./errors";
 
 const PREFIX = "rly_";
 
@@ -7,11 +8,22 @@ function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-function mintToken(): string {
+function mintSecret(): string {
   return `${PREFIX}${randomBytes(32).toString("base64url")}`;
 }
 
+function newTokenId(): string {
+  return `tok_${randomBytes(12).toString("base64url")}`;
+}
+
+function asIso(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
 export type McpTokenMeta = {
+  id: string;
+  name: string;
   tokenPrefix: string;
   createdAt: string;
   token?: string;
@@ -27,31 +39,86 @@ export async function userIdFromMcpToken(token: string): Promise<string | null> 
   return rows[0]?.user_id ?? null;
 }
 
-export async function getMcpTokenMeta(userId: string): Promise<McpTokenMeta | null> {
+export async function listMcpTokens(userId: string): Promise<McpTokenMeta[]> {
   const sql = await getSql();
-  const rows = await sql<{ token_prefix: string; created_at: unknown }>`
-    select token_prefix, created_at from mcp_tokens where user_id = ${userId} limit 1
+  const rows = await sql<{
+    id: string;
+    name: string;
+    token_prefix: string;
+    created_at: unknown;
+  }>`
+    select id, name, token_prefix, created_at
+    from mcp_tokens
+    where user_id = ${userId}
+    order by created_at desc
   `;
-  const row = rows[0];
-  if (!row) return null;
-  const created =
-    row.created_at instanceof Date
-      ? row.created_at.toISOString()
-      : String(row.created_at);
-  return { tokenPrefix: row.token_prefix, createdAt: created };
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    tokenPrefix: row.token_prefix,
+    createdAt: asIso(row.created_at),
+  }));
 }
 
-export async function issueMcpToken(userId: string): Promise<McpTokenMeta> {
-  const token = mintToken();
+export async function createMcpToken(
+  userId: string,
+  name: string,
+): Promise<McpTokenMeta> {
+  const trimmed = name.trim() || "Agent";
+  const token = mintSecret();
+  const prefix = `${token.slice(0, 10)}…`;
+  const id = newTokenId();
+  const sql = await getSql();
+  const rows = await sql<{ created_at: unknown }>`
+    insert into mcp_tokens (id, user_id, name, token_hash, token_prefix, created_at)
+    values (${id}, ${userId}, ${trimmed}, ${hashToken(token)}, ${prefix}, now())
+    returning created_at
+  `;
+  return {
+    id,
+    name: trimmed,
+    tokenPrefix: prefix,
+    createdAt: asIso(rows[0]?.created_at ?? new Date()),
+    token,
+  };
+}
+
+export async function rotateMcpToken(
+  userId: string,
+  id: string,
+): Promise<McpTokenMeta> {
+  const token = mintSecret();
   const prefix = `${token.slice(0, 10)}…`;
   const sql = await getSql();
-  await sql`
-    insert into mcp_tokens (user_id, token_hash, token_prefix, created_at)
-    values (${userId}, ${hashToken(token)}, ${prefix}, now())
-    on conflict (user_id) do update set
-      token_hash = excluded.token_hash,
-      token_prefix = excluded.token_prefix,
-      created_at = now()
+  const rows = await sql<{
+    id: string;
+    name: string;
+    created_at: unknown;
+  }>`
+    update mcp_tokens
+    set token_hash = ${hashToken(token)},
+        token_prefix = ${prefix},
+        created_at = now()
+    where id = ${id} and user_id = ${userId}
+    returning id, name, created_at
   `;
-  return { tokenPrefix: prefix, createdAt: new Date().toISOString(), token };
+  const row = rows[0];
+  if (!row) throw new ReliquaryError("Token not found", 404, "NOT_FOUND");
+  return {
+    id: row.id,
+    name: row.name,
+    tokenPrefix: prefix,
+    createdAt: asIso(row.created_at),
+    token,
+  };
+}
+
+export async function revokeMcpToken(userId: string, id: string): Promise<void> {
+  const sql = await getSql();
+  const rows = await sql<{ id: string }>`
+    delete from mcp_tokens
+    where id = ${id} and user_id = ${userId}
+    returning id
+  `;
+  if (!rows[0]) throw new ReliquaryError("Token not found", 404, "NOT_FOUND");
 }
