@@ -11,6 +11,7 @@ export type EditorValues = {
   title: string;
   description: string;
   html: string;
+  explainer: string;
   collectionId: string;
   tags: string;
   slug: string;
@@ -34,6 +35,7 @@ export function EditorForm({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [html, setHtml] = useState(initial?.html ?? "");
+  const [explainer, setExplainer] = useState(initial?.explainerHtml ?? "");
   const [collectionId, setCollectionId] = useState(initial?.collectionId ?? "");
   const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
   const [slug, setSlug] = useState(initial?.slug ?? "");
@@ -46,8 +48,24 @@ export function EditorForm({
     return () => window.clearTimeout(t);
   }, [html]);
 
-  const valuesRef = useRef({ title, description, html, collectionId, tags, slug });
-  valuesRef.current = { title, description, html, collectionId, tags, slug };
+  const valuesRef = useRef({
+    title,
+    description,
+    html,
+    explainer,
+    collectionId,
+    tags,
+    slug,
+  });
+  valuesRef.current = {
+    title,
+    description,
+    html,
+    explainer,
+    collectionId,
+    tags,
+    slug,
+  };
   const onSubmitRef = useRef(onSubmit);
   onSubmitRef.current = onSubmit;
 
@@ -67,7 +85,15 @@ export function EditorForm({
 
   async function handleSubmit(e?: FormEvent) {
     e?.preventDefault();
-    await onSubmit({ title, description, html, collectionId, tags, slug });
+    await onSubmit({
+      title,
+      description,
+      html,
+      explainer,
+      collectionId,
+      tags,
+      slug,
+    });
   }
 
   function onFile(file: File | undefined) {
@@ -134,6 +160,17 @@ export function EditorForm({
             placeholder="generated from title"
           />
         </Field>
+        <div className="md:col-span-2">
+          <Field label="Explainer" htmlFor="explainer">
+            <Textarea
+              id="explainer"
+              value={explainer}
+              onChange={(e) => setExplainer(e.target.value)}
+              placeholder='Optional notes beside Source. Cite lines with <a data-line="12">'
+              className="min-h-20"
+            />
+          </Field>
+        </div>
         <div className="flex items-end gap-2">
           <input
             ref={fileRef}

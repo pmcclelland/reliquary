@@ -35,6 +35,7 @@ When creating artifacts:
 - For React, either send a full document that loads React + Babel, or send a module that defines function App() { ... }.
 - Keep work self-contained: no local file references. CDNs are allowed.
 - Set title, a short description, optional collection (id or slug), and tags.
+- explainer is optional HTML notes shown beside Source. Do not invent one unless the user asked for notes or an explanation. Cite relic lines with <a data-line="12"> or data-line="12-28" against the stored html.
 - After publishing, the live share view is /s/{slug} (thin Reliquary bar, full-bleed artifact). The wiki page is /a/{slug}.
 
 Use list_artifacts before editing so you target the right id or slug.`;
@@ -55,7 +56,8 @@ const TOOLS = [
   },
   {
     name: "get_artifact",
-    description: "Get a single artifact including its full HTML. Lookup by id or slug.",
+    description:
+      "Get a single artifact including its full HTML and explainerHtml (empty if none). Lookup by id or slug.",
     inputSchema: {
       type: "object",
       properties: {
@@ -74,6 +76,11 @@ const TOOLS = [
         title: { type: "string" },
         html: { type: "string" },
         description: { type: "string" },
+        explainer: {
+          type: "string",
+          description:
+            "Optional HTML notes for Source. Only send when the user asked for an explainer. Use data-line citations.",
+        },
         collection: {
           type: "string",
           description: "Collection id or slug to file under",
@@ -94,6 +101,11 @@ const TOOLS = [
         title: { type: "string" },
         html: { type: "string" },
         description: { type: "string" },
+        explainer: {
+          type: "string",
+          description:
+            "Optional HTML notes for Source. Empty string clears. Use data-line citations.",
+        },
         collection: { type: "string", description: "Collection id or slug, or empty to unfile" },
         tags: { type: "array", items: { type: "string" } },
         slug: { type: "string" },

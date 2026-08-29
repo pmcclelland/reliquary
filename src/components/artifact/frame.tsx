@@ -1,23 +1,49 @@
 import { useEffect, useState } from "react";
+import { EXPLAINER_MESSAGE_SOURCE } from "@/lib/reliquary/explainer";
 import { cn } from "@/lib/utils";
 
 export function ArtifactFrame({
   html,
   title,
   className,
+  onLineRef,
 }: {
   html: string;
   title: string;
   className?: string;
+  onLineRef?: (line: string) => void;
 }) {
   const [src, setSrc] = useState<string>();
 
   useEffect(() => {
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const theme =
+      typeof document !== "undefined"
+        ? document.documentElement.dataset.theme
+        : "";
+    const themed = theme
+      ? html.replace(/<html\b([^>]*)>/i, (_, attrs: string) => {
+          const cleaned = attrs.replace(/\sdata-theme="[^"]*"/i, "");
+          return `<html${cleaned} data-theme="${theme}">`;
+        })
+      : html;
+    const blob = new Blob([themed], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     setSrc(url);
     return () => URL.revokeObjectURL(url);
   }, [html]);
+
+  useEffect(() => {
+    if (!onLineRef) return;
+    const notify = onLineRef;
+    function onMessage(event: MessageEvent) {
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.source !== EXPLAINER_MESSAGE_SOURCE) return;
+      notify(String(data.line ?? ""));
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [onLineRef]);
 
   if (!src) {
     return (

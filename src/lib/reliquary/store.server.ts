@@ -22,6 +22,8 @@ type ArtifactRow = {
   title: string;
   description: string;
   html?: string;
+  explainer_html?: string;
+  has_explainer?: boolean;
   collection_id: string | null;
   collection_slug: string | null;
   collection_title: string | null;
@@ -88,13 +90,27 @@ function mapSummary(row: ArtifactRow): ArtifactSummary {
     collectionTitle: row.collection_title,
     tags: parseTags(row.tags),
     kind: row.kind === "react" ? "react" : "html",
+    hasExplainer:
+      row.has_explainer === true || Boolean(row.explainer_html?.trim()),
     createdAt: iso(row.created_at),
     updatedAt: iso(row.updated_at),
   };
 }
 
 function mapArtifact(row: ArtifactRow): Artifact {
-  return { ...mapSummary(row), html: row.html ?? "" };
+  return {
+    ...mapSummary(row),
+    html: row.html ?? "",
+    explainerHtml: row.explainer_html ?? "",
+  };
+}
+
+function prepareExplainer(source: string | undefined): string {
+  const html = (source ?? "").trim();
+  if (new TextEncoder().encode(html).length > MAX_HTML_BYTES) {
+    throw new ReliquaryError("Explainer is too large", 413, "TOO_LARGE");
+  }
+  return html;
 }
 
 function mapCollection(row: CollectionRow): Collection {
@@ -241,6 +257,7 @@ export async function listArtifacts(
   const sql = await getSql();
   const rows = await sql<ArtifactRow>`
     select a.id, a.slug, a.title, a.description, a.collection_id, a.tags, a.kind,
+      (a.explainer_html <> '') as has_explainer,
       a.created_at, a.updated_at,
       c.slug as collection_slug, c.title as collection_title
     from artifacts a
@@ -287,7 +304,8 @@ export async function getArtifact(
   await ensureSeeded(userId);
   const sql = await getSql();
   const rows = await sql<ArtifactRow>`
-    select a.id, a.slug, a.title, a.description, a.html, a.collection_id, a.tags, a.kind,
+    select a.id, a.slug, a.title, a.description, a.html, a.explainer_html,
+      a.collection_id, a.tags, a.kind,
       a.created_at, a.updated_at,
       c.slug as collection_slug, c.title as collection_title
     from artifacts a
@@ -357,9 +375,10 @@ export async function createArtifact(
   const kind: ArtifactKind = inferKind(html);
   const sql = await getSql();
   await sql`
-    insert into artifacts (id, user_id, slug, title, description, html, collection_id, tags, kind)
+    insert into artifacts (id, user_id, slug, title, description, html, explainer_html, collection_id, tags, kind)
     values (
       ${id}, ${userId}, ${slug}, ${title}, ${input.description?.trim() ?? ""}, ${html},
+      ${prepareExplainer(input.explainer)},
       ${collectionId}, ${JSON.stringify(tags)}, ${kind}
     )
   `;
@@ -394,6 +413,10 @@ export async function updateArtifact(
     patch.description !== undefined
       ? patch.description.trim()
       : current.description;
+  const explainerHtml =
+    patch.explainer !== undefined
+      ? prepareExplainer(patch.explainer)
+      : current.explainerHtml;
   const kind = inferKind(html);
   const sql = await getSql();
   await sql`
@@ -402,6 +425,7 @@ export async function updateArtifact(
       title = ${title},
       description = ${description},
       html = ${html},
+      explainer_html = ${explainerHtml},
       collection_id = ${collectionId},
       tags = ${JSON.stringify(tags)},
       kind = ${kind},

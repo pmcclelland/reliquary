@@ -42,6 +42,7 @@ function EditPage() {
             title: values.title,
             description: values.description,
             html: values.html,
+            explainer: values.explainer,
             collectionId: values.collectionId || null,
             tags: parseTags(values.tags),
             slug: values.slug || undefined,

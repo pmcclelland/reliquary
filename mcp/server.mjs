@@ -54,6 +54,7 @@ const TOOLS = [
         title: { type: "string" },
         html: { type: "string" },
         description: { type: "string" },
+        explainer: { type: "string" },
         collection: { type: "string" },
         tags: { type: "array", items: { type: "string" } },
         slug: { type: "string" },
@@ -71,6 +72,7 @@ const TOOLS = [
         title: { type: "string" },
         html: { type: "string" },
         description: { type: "string" },
+        explainer: { type: "string" },
         collection: { type: "string" },
         tags: { type: "array", items: { type: "string" } },
         slug: { type: "string" },
@@ -222,7 +224,7 @@ async function handle(msg) {
           capabilities: { tools: {} },
           serverInfo: { name: "reliquary", version: "1.0.0" },
           instructions:
-            "Reliquary stores self-contained HTML artifacts. Create with title + html; collection may be an id or slug.",
+            "Reliquary stores self-contained HTML artifacts. Create with title + html; collection may be an id or slug. explainer is optional HTML notes — only send when the user asked for an explanation.",
         });
         return;
       case "notifications/initialized":

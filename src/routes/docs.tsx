@@ -265,10 +265,17 @@ DELETE /api/collections/:id`}</Pre>
   "title": "Orbital",
   "description": "A slow orbit.",
   "html": "<!DOCTYPE html>...",
+  "explainer": "<p>The <a data-line=\\"42\\">loop</a> drives the phase.</p>",
   "collection": "motion",
   "tags": ["motion", "canvas"],
   "slug": "orbital"
 }`}</Pre>
+        <p className="mt-3 text-sm text-muted">
+          <code className="font-mono text-xs">explainer</code> is optional HTML
+          shown beside Source. Omit it unless notes were requested. Cite relic
+          lines with <code className="font-mono text-xs">data-line="12"</code> or{" "}
+          <code className="font-mono text-xs">data-line="12-28"</code>.
+        </p>
 
         <h2 className="mt-12 font-serif text-2xl tracking-tight">Share</h2>
         <p className="mt-2 text-sm text-muted">

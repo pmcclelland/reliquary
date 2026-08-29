@@ -10,12 +10,14 @@ export type ArtifactSummary = {
   collectionTitle: string | null;
   tags: string[];
   kind: ArtifactKind;
+  hasExplainer: boolean;
   createdAt: string;
   updatedAt: string;
 };
 
 export type Artifact = ArtifactSummary & {
   html: string;
+  explainerHtml: string;
 };
 
 export type Collection = {
@@ -38,6 +40,7 @@ export type ArtifactInput = {
   title: string;
   html: string;
   description?: string;
+  explainer?: string;
   collectionId?: string | null;
   collection?: string | null;
   tags?: string[];

@@ -4,7 +4,7 @@ A wiki of living artifacts.
 
 [![Reliquary](public/og.jpg)](https://reliquary.pmcclel.land)
 
-Self-contained HTML — pages, motion studies, and small interfaces — filed like notes in a quiet archive. Each account is a private library.
+Self-contained HTML — pages, motion studies, and small interfaces — filed like notes in a quiet archive. Sign in with Google or email; each account is a private library, with its own MCP tokens.
 
 **[reliquary.pmcclel.land](https://reliquary.pmcclel.land)**
 
@@ -14,8 +14,15 @@ An artifact is a single HTML file. It can be a typographic essay, a canvas study
 
 Send a full document when you can. Fragments are wrapped in a simple page. A module that defines `function App()` is wrapped with React 18 and Babel standalone. CDNs are allowed; local file paths are not.
 
+An optional explainer (HTML notes with `data-line` citations) can sit beside Source when someone asks for one. Lists and the live share view omit it.
+
+## Collections
+
+A collection is a shelf. Give it a title and an optional description — the line under the name, the way Guides, Motion, and Interface are filed. Artifacts can sit on a shelf, move later, or stay unfiled.
+
 | View | URL |
 | --- | --- |
+| Sign in | `/login` |
 | Library | `/` |
 | Wiki page | `/a/:slug` |
 | Live share | `/s/:slug` — thin Reliquary bar, full-bleed artifact |
@@ -62,7 +69,7 @@ TanStack Start, React 19, Tailwind v4, Postgres, Better Auth. Deployed on Vercel
 
 ## Develop
 
-Node 22. Postgres via `DATABASE_URL`. Deployed auth uses Better Auth (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`); Google sign-in is on when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set.
+Node 22. Postgres via `DATABASE_URL`. Auth is Better Auth (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`): email and password, plus Google when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set.
 
 ```bash
 npm install

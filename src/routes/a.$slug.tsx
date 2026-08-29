@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArtifactFrame } from "@/components/artifact/frame";
+import { SourceView } from "@/components/artifact/source-view";
 import { ShareLinkDialog } from "@/components/artifact/share-dialog";
 import { AppShell } from "@/components/layout/app-shell";
 import {
@@ -132,6 +133,9 @@ function ArtifactPage() {
             <Button
               variant={source ? "default" : "secondary"}
               size="sm"
+              title={
+                artifact.hasExplainer ? "Source and explainer" : "Source"
+              }
               onClick={() => setSource((v) => !v)}
             >
               <Code2 className="size-4" />
@@ -182,11 +186,13 @@ function ArtifactPage() {
             </DropdownMenu>
           </div>
         </header>
-        <div className="min-h-[70vh] flex-1 bg-chip">
+        <div className="min-h-[70vh] flex-1 overflow-hidden bg-chip">
           {source ? (
-            <pre className="h-full overflow-auto p-4 font-mono text-[12px] leading-relaxed text-fg">
-              {artifact.html}
-            </pre>
+            <SourceView
+              html={artifact.html}
+              explainerHtml={artifact.explainerHtml}
+              title={artifact.title}
+            />
           ) : (
             <ArtifactFrame html={artifact.html} title={artifact.title} />
           )}
