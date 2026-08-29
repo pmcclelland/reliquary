@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  h1, h2, h3, h4, p, dl, dd, figure, blockquote { margin: 0; }
+  ul, ol { margin: 0; padding: 0; }
+  img, svg { display: block; max-width: 100%; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+</style>
+<title>Shrike Frontend Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    /* Palette derived from Feathr's own tokens: sky-950 ink, cyan-700 action, amber-700 boundary, violet-700 public path. */
+    --ink: #19263c;
+    --ground: #f5f7fa;
+    --surface: #ffffff;
+    --surface-sunk: #eef2f7;
+    --hairline: #dde4ee;
+    --hairline-strong: #c3cede;
+    --body: #4d5b70;
+    --muted: #6d7c92;
+    --action: #0e7490;
+    --action-soft: #e6f5f8;
+    --boundary: #b45309;
+    --boundary-soft: #fdf3e3;
+    --public: #6d28d9;
+    --public-soft: #f2eefe;
+
+    --font-display: 'Familjen Grotesk', 'Helvetica Neue', Helvetica, sans-serif;
+    --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    --measure: 68ch;
+    --wide: 1080px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --ink: #eff4fa;
+      --ground: #0d1626;
+      --surface: #16233a;
+      --surface-sunk: #101c30;
+      --hairline: #2a3a54;
+      --hairline-strong: #3d5273;
+      --body: #a8b6ca;
+      --muted: #8494ac;
+      --action: #22b8d4;
+      --action-soft: #10303d;
+      --boundary: #e0a44b;
+      --boundary-soft: #33270f;
+      --public: #a78bfa;
+      --public-soft: #241a3d;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --ink: #eff4fa;
+    --ground: #0d1626;
+    --surface: #16233a;
+    --surface-sunk: #101c30;
+    --hairline: #2a3a54;
+    --hairline-strong: #3d5273;
+    --body: #a8b6ca;
+    --muted: #8494ac;
+    --action: #22b8d4;
+    --action-soft: #10303d;
+    --boundary: #e0a44b;
+    --boundary-soft: #33270f;
+    --public: #a78bfa;
+    --public-soft: #241a3d;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--body);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin: 0 auto;
+    max-width: 1400px;
+    padding: 0 24px 96px;
+  }
+
+  @media (min-width: 1120px) {
+    .shell {
+      grid-template-columns: 186px minmax(0, 1fr);
+      gap: 56px;
+      padding: 0 40px 120px;
+    }
+  }
+
+  /* Contents rail */
+
+  .rail {
+    display: none;
+  }
+
+  @media (min-width: 1120px) {
+    .rail {
+      align-self: start;
+      display: block;
+      padding-top: 120px;
+      position: sticky;
+      top: 32px;
+    }
+  }
+
+  .rail-title {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+  }
+
+  .rail ol {
+    border-left: 1px solid var(--hairline);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 16px;
+  }
+
+  .rail a {
+    color: var(--body);
+    display: block;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+
+  .rail a:hover,
+  .rail a:focus-visible {
+    color: var(--action);
+  }
+
+  .rail .num {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    margin-right: 6px;
+  }
+
+  /* Masthead */
+
+  main {
+    min-width: 0;
+  }
+
+  .masthead {
+    border-bottom: 1px solid var(--hairline);
+    padding: 88px 0 40px;
+  }
+
+  .eyebrow {
+    color: var(--action);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: clamp(2.3rem, 5vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.03;
+    margin: 18px 0 0;
+    max-width: 22ch;
+    text-wrap: balance;
+  }
+
+  .thesis {
+    color: var(--body);
+    font-size: 1.1875rem;
+    line-height: 1.55;
+    margin: 22px 0 0;
+    max-width: 62ch;
+  }
+
+  .facts {
+    border-top: 1px solid var(--hairline);
+    display: grid;
+    gap: 20px 28px;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    margin-top: 36px;
+    padding-top: 26px;
+  }
+
+  .fact dt {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .fact dd {
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin: 4px 0 0;
+  }
+
+  .fact dd small {
+    color: var(--muted);
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* Sections */
+
+  section {
+    padding-top: 68px;
+    scroll-margin-top: 24px;
+  }
+
+  h2 {
+    align-items: baseline;
+    color: var(--ink);
+    display: flex;
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+    gap: 14px;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+
+  h2 .num {
+    color: var(--action);
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    transform: translateY(-0.35em);
+  }
+
+  h3 {
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 40px 0 10px;
+  }
+
+  p,
+  ul,
+  ol.prose {
+    max-width: var(--measure);
+  }
+
+  p {
+    margin: 0 0 16px;
+  }
+
+  ul {
+    margin: 0 0 16px;
+    padding-left: 20px;
+  }
+
+  li {
+    margin-bottom: 8px;
+  }
+
+  strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  a {
+    color: var(--action);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  code {
+    background: var(--surface-sunk);
+    border-radius: 3px;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.8125em;
+    padding: 1px 5px;
+    white-space: nowrap;
+  }
+
+  /* Figures */
+
+  figure {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    margin: 28px 0 32px;
+    max-width: var(--wide);
+    overflow: hidden;
+  }
+
+  .fig-scroll {
+    overflow-x: auto;
+    padding: 22px 22px 6px;
+  }
+
+  figure svg {
+    display: block;
+    height: auto;
+    max-width: 100%;
+    min-width: 660px;
+    color: var(--ink);
+  }
+
+  figcaption {
+    border-top: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    margin-top: 16px;
+    padding: 14px 22px;
+  }
+
+  figcaption b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* SVG primitives */
+  .bx { fill: var(--surface-sunk); stroke: var(--hairline-strong); stroke-width: 1; }
+  .bx-lead { fill: var(--action-soft); stroke: var(--action); stroke-width: 1.25; }
+  .bx-warn { fill: var(--boundary-soft); stroke: var(--boundary); stroke-width: 1.25; }
+  .bx-pub { fill: var(--public-soft); stroke: var(--public); stroke-width: 1.25; }
+  .bx-ghost { fill: none; stroke: var(--hairline-strong); stroke-dasharray: 3 4; stroke-width: 1; }
+  .t { fill: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .t-name { fill: var(--ink); font-family: 'Familjen Grotesk', sans-serif; font-size: 13.5px; font-weight: 600; }
+  .t-sub { fill: var(--muted); font-family: 'Public Sans', sans-serif; font-size: 11px; }
+  .t-edge { fill: var(--action); font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; }
+  .t-edge-warn { fill: var(--boundary); font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; }
+  .t-edge-pub { fill: var(--public); font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; }
+  .t-tag { fill: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; }
+  .ln { stroke: var(--action); stroke-width: 1.4; fill: none; }
+  .ln-warn { stroke: var(--boundary); stroke-width: 1.4; fill: none; }
+  .ln-pub { stroke: var(--public); stroke-width: 1.4; fill: none; }
+  .ln-soft { stroke: var(--hairline-strong); stroke-width: 1; fill: none; }
+  .ah { fill: var(--action); }
+  .ah-warn { fill: var(--boundary); }
+  .ah-soft { fill: var(--hairline-strong); }
+  .ah-pub { fill: var(--public); }
+
+  /* Tables */
+
+  .table-wrap {
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    margin: 24px 0 32px;
+    max-width: var(--wide);
+    overflow-x: auto;
+  }
+
+  table {
+    background: var(--surface);
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    min-width: 560px;
+    width: 100%;
+  }
+
+  th {
+    background: var(--surface-sunk);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid var(--hairline);
+    padding: 11px 16px;
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  td.mono,
+  td .pkg {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+
+  td.num {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Callouts */
+
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--action);
+    border-radius: 0 8px 8px 0;
+    margin: 24px 0 28px;
+    max-width: var(--measure);
+    padding: 18px 20px;
+  }
+
+  .note.warn {
+    border-left-color: var(--boundary);
+  }
+
+  .note-label {
+    color: var(--action);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .note.warn .note-label {
+    color: var(--boundary);
+  }
+
+  .note p {
+    margin: 8px 0 0;
+    max-width: none;
+  }
+
+  .note p:first-of-type {
+    margin-top: 6px;
+  }
+
+  /* Split cards */
+
+  .cards {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
+    margin: 24px 0 32px;
+    max-width: var(--wide);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+
+  .card h4 {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin: 0 0 8px;
+  }
+
+  .card p {
+    font-size: 0.875rem;
+    margin: 0;
+    max-width: none;
+  }
+
+  .card + .card {
+    margin: 0;
+  }
+
+  /* Footer */
+
+  footer {
+    border-top: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.8125rem;
+    margin-top: 72px;
+    padding-top: 24px;
+  }
+
+  footer p {
+    max-width: 64ch;
+  }
+
+  a:focus-visible,
+  .rail a:focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 3px;
+  }
+
+  section:focus {
+    outline: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="rail" aria-label="Contents">
+    <div class="rail-title">Contents</div>
+    <ol>
+      <li><a href="#shape"><span class="num">1</span>Shape of the repo</a></li>
+      <li><a href="#data"><span class="num">2</span>The data path</a></li>
+      <li><a href="#writes"><span class="num">3</span>Writes &amp; failure</a></li>
+      <li><a href="#reactivity"><span class="num">4</span>Reactivity contract</a></li>
+      <li><a href="#stores"><span class="num">5</span>Stores &amp; identity</a></li>
+      <li><a href="#boot"><span class="num">6</span>Boot &amp; routing</a></li>
+      <li><a href="#ui"><span class="num">7</span>The UI layer</a></li>
+      <li><a href="#build"><span class="num">8</span>Build &amp; delivery</a></li>
+      <li><a href="#gates"><span class="num">9</span>Quality gates</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow">Feathr &middot; shrike &middot; frontend</div>
+      <h1>Shrike Frontend Architecture</h1>
+      <p class="thesis">
+        Seven browser apps sit on seven shared libraries. Nearly everything the user sees is a
+        MobX-observable model fetched by one generic collection layer &mdash; so the interesting
+        architecture is not the component tree, it is the path a request takes and the contract
+        that makes a component re-render when the answer arrives.
+      </p>
+      <dl class="facts">
+        <div class="fact">
+          <dt>Workspaces</dt>
+          <dd>15<small>7 apps &middot; 7 libraries &middot; 1 lint plugin</small></dd>
+        </div>
+        <div class="fact">
+          <dt>Source files</dt>
+          <dd>~5,900<small>TS / TSX, of which ~1,040 are tests</small></dd>
+        </div>
+        <div class="fact">
+          <dt>Stack</dt>
+          <dd>React 18<small>TypeScript 5.2 &middot; MobX 6 &middot; Mantine 7</small></dd>
+        </div>
+        <div class="fact">
+          <dt>API collections</dt>
+          <dd>59<small>generated from blackbox models</small></dd>
+        </div>
+        <div class="fact">
+          <dt>Feature flags</dt>
+          <dd>38<small>per account, per user</small></dd>
+        </div>
+      </dl>
+    </header>
+
+    <section id="shape">
+      <h2><span class="num">&sect;1</span>The shape of the repo</h2>
+
+      <p>
+        Shrike is a Yarn 4 workspaces monorepo orchestrated by Turborepo. Dependencies run strictly
+        downward: an app may reach into any library, a library never reaches back into an app, and
+        no two libraries on the same layer depend on each other. Apps import libraries from their
+        built <code>dist/</code>, not from source &mdash; which is why a first checkout needs
+        <code>yarn build:library</code>, and why editing a shared component during development
+        requires <code>yarn watch</code> to be running.
+      </p>
+
+      <figure>
+        <div class="fig-scroll">
+          <svg viewBox="0 0 1000 486" role="img" aria-label="Layered dependency diagram: seven apps sit above report_components and testing, which sit above components and blackbox, which sit above rachis and locales, which sit above hooks. All dependency arrows point downward.">
+            <defs>
+              <marker id="a1" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah"></polygon>
+              </marker>
+              <marker id="a1s" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah-soft"></polygon>
+              </marker>
+            </defs>
+
+            <text class="t-tag" x="8" y="34">APPS</text>
+            <text class="t-tag" x="8" y="162">DOMAIN UI</text>
+            <text class="t-tag" x="8" y="266">MODELS + UI KIT</text>
+            <text class="t-tag" x="8" y="370">PRIMITIVES</text>
+            <text class="t-tag" x="8" y="452">BASE</text>
+
+            <rect class="bx-lead" x="120" y="14" width="176" height="52" rx="7"></rect>
+            <text class="t-name" x="208" y="38" text-anchor="middle">extender</text>
+            <text class="t-sub" x="208" y="55" text-anchor="middle">the product &middot; :9001</text>
+
+            <rect class="bx" x="308" y="14" width="112" height="52" rx="7"></rect>
+            <text class="t" x="364" y="38" text-anchor="middle">login</text>
+            <text class="t-sub" x="364" y="55" text-anchor="middle">:9005</text>
+
+            <rect class="bx-pub" x="432" y="14" width="112" height="52" rx="7"></rect>
+            <text class="t" x="488" y="38" text-anchor="middle">reports</text>
+            <text class="t-sub" x="488" y="55" text-anchor="middle">public &middot; :9004</text>
+
+            <rect class="bx" x="556" y="14" width="150" height="52" rx="7"></rect>
+            <text class="t" x="631" y="38" text-anchor="middle">partner_dash</text>
+            <text class="t-sub" x="631" y="55" text-anchor="middle">:9003</text>
+
+            <rect class="bx" x="718" y="14" width="92" height="52" rx="7"></rect>
+            <text class="t" x="764" y="38" text-anchor="middle">forms</text>
+            <text class="t-sub" x="764" y="55" text-anchor="middle">:9006</text>
+
+            <rect class="bx" x="822" y="14" width="80" height="52" rx="7"></rect>
+            <text class="t" x="862" y="38" text-anchor="middle">privacy</text>
+            <text class="t-sub" x="862" y="55" text-anchor="middle">:9002</text>
+
+            <rect class="bx" x="914" y="14" width="78" height="52" rx="7"></rect>
+            <text class="t" x="953" y="34" text-anchor="middle">admin</text>
+            <text class="t-sub" x="953" y="52" text-anchor="middle">legacy</text>
+
+            <rect class="bx-ghost" x="120" y="88" width="176" height="34" rx="7"></rect>
+            <text class="t-sub" x="208" y="110" text-anchor="middle">/perch &mdash; lazy route, not an app</text>
+
+            <rect class="bx-lead" x="120" y="142" width="386" height="52" rx="7"></rect>
+            <text class="t" x="313" y="164" text-anchor="middle">report_components</text>
+            <text class="t-sub" x="313" y="181" text-anchor="middle">stores &middot; report cards &middot; account &amp; role hooks</text>
+
+            <rect class="bx" x="822" y="142" width="170" height="52" rx="7"></rect>
+            <text class="t" x="907" y="164" text-anchor="middle">testing</text>
+            <text class="t-sub" x="907" y="181" text-anchor="middle">MSW server &middot; helpers</text>
+
+            <rect class="bx" x="120" y="246" width="386" height="52" rx="7"></rect>
+            <text class="t" x="313" y="268" text-anchor="middle">components</text>
+            <text class="t-sub" x="313" y="285" text-anchor="middle">1,260 files &middot; design tokens &middot; model-bound inputs</text>
+
+            <rect class="bx-lead" x="530" y="246" width="462" height="52" rx="7"></rect>
+            <text class="t" x="761" y="268" text-anchor="middle">blackbox</text>
+            <text class="t-sub" x="761" y="285" text-anchor="middle">59 collections &middot; typed API models &middot; flags &middot; fixtures</text>
+
+            <rect class="bx-lead" x="120" y="350" width="386" height="52" rx="7"></rect>
+            <text class="t" x="313" y="372" text-anchor="middle">rachis</text>
+            <text class="t-sub" x="313" y="389" text-anchor="middle">Model &middot; Collection &middot; wretch &middot; validate</text>
+
+            <rect class="bx" x="530" y="350" width="462" height="52" rx="7"></rect>
+            <text class="t" x="761" y="372" text-anchor="middle">locales</text>
+            <text class="t-sub" x="761" y="389" text-anchor="middle">i18next &middot; plain-English keys</text>
+
+            <rect class="bx" x="120" y="432" width="872" height="42" rx="7"></rect>
+            <text class="t" x="556" y="458" text-anchor="middle">hooks &mdash; pure utilities, dates, error formatting (depends on nothing)</text>
+
+            <line class="ln" x1="208" y1="66" x2="208" y2="140" marker-end="url(#a1)"></line>
+            <text class="t-edge" x="216" y="132">store + cards</text>
+
+            <line class="ln-pub" x1="488" y1="66" x2="488" y2="140" marker-end="url(#a1)"></line>
+            <text class="t-edge-pub" x="496" y="106">read-only store</text>
+
+            <line class="ln-soft" x1="631" y1="66" x2="450" y2="244" marker-end="url(#a1s)"></line>
+            <line class="ln-soft" x1="764" y1="66" x2="700" y2="244" marker-end="url(#a1s)"></line>
+            <line class="ln-soft" x1="862" y1="66" x2="380" y2="244" marker-end="url(#a1s)"></line>
+
+            <line class="ln" x1="290" y1="194" x2="290" y2="244" marker-end="url(#a1)"></line>
+            <line class="ln" x1="400" y1="194" x2="640" y2="244" marker-end="url(#a1)"></line>
+            <line class="ln-soft" x1="907" y1="194" x2="880" y2="244" marker-end="url(#a1s)"></line>
+
+            <line class="ln" x1="290" y1="298" x2="290" y2="348" marker-end="url(#a1)"></line>
+            <text class="t-edge" x="298" y="326">inputs bind to models</text>
+
+            <line class="ln" x1="700" y1="298" x2="430" y2="348" marker-end="url(#a1)"></line>
+            <text class="t-edge" x="530" y="322">extends Model / Collection</text>
+
+            <line class="ln" x1="313" y1="402" x2="313" y2="430" marker-end="url(#a1)"></line>
+            <line class="ln-soft" x1="761" y1="402" x2="761" y2="430" marker-end="url(#a1s)"></line>
+          </svg>
+        </div>
+        <figcaption>
+          <b>Every arrow points down.</b> The two thick paths are the ones that shape day-to-day
+          work: <code>blackbox</code> extends <code>rachis</code>' base classes to produce typed API
+          models, and <code>components</code> depends on <code>rachis</code> because form inputs
+          bind directly to a model attribute. Faint arrows are the same relationship for apps that
+          rarely change. Perch, the internal admin tool, is a lazily-loaded route inside extender
+          rather than its own workspace.
+        </figcaption>
+      </figure>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Library</th>
+              <th scope="col">Owns</th>
+              <th scope="col">Depends on</th>
+              <th scope="col">Files</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">hooks</td>
+              <td>React hooks and pure utilities &mdash; dates via moment-timezone, error flattening, query strings, DOMPurify.</td>
+              <td class="mono">&mdash;</td>
+              <td class="num">69</td>
+            </tr>
+            <tr>
+              <td class="mono">rachis</td>
+              <td><code>Model</code>, <code>Collection</code>, the <code>wretch</code> fetch wrapper, and the validate.js extension layer.</td>
+              <td class="mono">hooks</td>
+              <td class="num">35</td>
+            </tr>
+            <tr>
+              <td class="mono">locales</td>
+              <td>i18next configuration. Translation keys <em>are</em> the English copy; JSON lives in <code>/locales</code> at the repo root.</td>
+              <td class="mono">hooks</td>
+              <td class="num">2</td>
+            </tr>
+            <tr>
+              <td class="mono">blackbox</td>
+              <td>One interface + model + collection per API resource. 59 collections, 44 campaign classes, 17 targetable classes, the <code>EFlags</code> enum, and MSW fixtures.</td>
+              <td class="mono">rachis, hooks, locales</td>
+              <td class="num">326</td>
+            </tr>
+            <tr>
+              <td class="mono">components</td>
+              <td>The design system: tokens, CSS-module components, 183 Storybook stories, and every form input in both value-controlled and model-bound form.</td>
+              <td class="mono">rachis, hooks, locales</td>
+              <td class="num">1,260</td>
+            </tr>
+            <tr>
+              <td class="mono">report_components</td>
+              <td>The two stores, the report card library, and the identity hooks (<code>useAccount</code>, <code>useUser</code>, <code>useFlags</code>, <code>useRole</code>).</td>
+              <td class="mono">blackbox, components, rachis, hooks</td>
+              <td class="num">297</td>
+            </tr>
+            <tr>
+              <td class="mono">testing</td>
+              <td>The shared MSW server, render helpers, and timer utilities every suite loads globally.</td>
+              <td class="mono">blackbox</td>
+              <td class="num">16</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        <code>extender</code> is where the weight is: 3,748 source files, 558 CSS modules, and 695
+        test files. Its internal layout is conventional &mdash; <code>src/App/</code> holds pages and
+        route definitions, <code>src/components/</code> holds 123 app-specific components,
+        <code>src/hooks/</code> holds 47 hooks, and <code>src/state/</code> holds the contexts and
+        store re-exports that everything else imports through the <code>@feathr/extender/state</code>
+        alias.
+      </p>
+    </section>
+
+    <section id="data">
+      <h2><span class="num">&sect;2</span>The data path: one collection layer for every resource</h2>
+
+      <p>
+        No component fetches. A component asks a collection for a list or a model, gets back an
+        object that is already observable and already knows whether it is pending, and renders it.
+        The collection deduplicates the request by URL, so several components asking the same
+        question in the same render produce one network call and share one result.
+      </p>
+
+      <figure>
+        <div class="fig-scroll">
+          <svg viewBox="0 0 1000 320" role="img" aria-label="Read path: an observer component calls useStore, then a collection, which either serves apiCache or fetches through wretch to the blackbox API; the JSON response populates an observable map, and MobX notifies the component to re-render.">
+            <defs>
+              <marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah"></polygon>
+              </marker>
+              <marker id="a2w" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah-warn"></polygon>
+              </marker>
+            </defs>
+
+            <rect class="bx-lead" x="24" y="48" width="158" height="86" rx="7"></rect>
+            <text class="t-name" x="103" y="80" text-anchor="middle">Component</text>
+            <text class="t" x="103" y="102" text-anchor="middle">observer()</text>
+            <text class="t-sub" x="103" y="120" text-anchor="middle">mobx-react-lite</text>
+
+            <rect class="bx" x="228" y="48" width="146" height="86" rx="7"></rect>
+            <text class="t" x="301" y="82" text-anchor="middle">useStore()</text>
+            <text class="t-sub" x="301" y="100" text-anchor="middle">one store instance</text>
+            <text class="t-sub" x="301" y="116" text-anchor="middle">per app mount</text>
+
+            <rect class="bx-lead" x="420" y="30" width="216" height="122" rx="7"></rect>
+            <text class="t-name" x="528" y="56" text-anchor="middle">Collection</text>
+            <text class="t" x="528" y="80" text-anchor="middle">list() &middot; get()</text>
+            <line class="ln-soft" x1="436" y1="94" x2="620" y2="94"></line>
+            <text class="t-sub" x="528" y="112" text-anchor="middle">apiCache[url] &mdash; dedupe</text>
+            <text class="t-sub" x="528" y="132" text-anchor="middle">modelsById &mdash; ObservableMap</text>
+
+            <rect class="bx" x="682" y="48" width="140" height="86" rx="7"></rect>
+            <text class="t" x="752" y="82" text-anchor="middle">wretch</text>
+            <text class="t-sub" x="752" y="100" text-anchor="middle">fetch wrapper</text>
+            <text class="t-sub" x="752" y="116" text-anchor="middle">Session headers</text>
+
+            <rect class="bx-warn" x="868" y="48" width="120" height="86" rx="7"></rect>
+            <text class="t" x="928" y="82" text-anchor="middle">blackbox</text>
+            <text class="t-sub" x="928" y="100" text-anchor="middle">REST API</text>
+            <text class="t-sub" x="928" y="116" text-anchor="middle">/v1/</text>
+
+            <line class="ln" x1="182" y1="91" x2="226" y2="91" marker-end="url(#a2)"></line>
+            <line class="ln" x1="374" y1="91" x2="418" y2="91" marker-end="url(#a2)"></line>
+            <text class="t-edge" x="396" y="80" text-anchor="middle">.Campaigns</text>
+
+            <line class="ln" x1="636" y1="91" x2="680" y2="91" marker-end="url(#a2)"></line>
+            <text class="t-edge" x="658" y="82" text-anchor="middle">miss</text>
+
+            <line class="ln-warn" x1="822" y1="91" x2="866" y2="91" marker-end="url(#a2w)"></line>
+            <text class="t-edge-warn" x="844" y="82" text-anchor="middle">JWT</text>
+
+            <polyline class="ln" points="928,134 928,196 560,196" marker-end="url(#a2)"></polyline>
+            <text class="t-edge" x="700" y="188" text-anchor="middle">200 &rarr; processJSONResponse writes models</text>
+            <line class="ln" x1="560" y1="196" x2="560" y2="154" marker-end="url(#a2)"></line>
+
+            <polyline class="ln" points="470,152 470,262 103,262" marker-end="url(#a2)"></polyline>
+            <text class="t-edge" x="290" y="254" text-anchor="middle">MobX notifies the observer &rarr; re-render</text>
+            <line class="ln" x1="103" y1="262" x2="103" y2="136" marker-end="url(#a2)"></line>
+
+            <text class="t-sub" x="24" y="300">First render returns isPending: true. Nothing awaits &mdash; the component renders again when the map changes.</text>
+          </svg>
+        </div>
+        <figcaption>
+          <b>The loop is the architecture.</b> <code>list()</code> returns synchronously with
+          <code>isPending: true</code>; the response is written into an observable map, and MobX &mdash;
+          not a promise, not a state setter &mdash; is what brings the component back. Break the
+          <code>observer</code> wrapper and the request still succeeds while the UI stays on the
+          loading state forever.
+        </figcaption>
+      </figure>
+
+      <h3>What a blackbox model actually is</h3>
+      <p>
+        Each API resource contributes three exports: an <code>IResource</code> interface describing
+        the attributes, a <code>Resource</code> class extending <code>Model</code>, and a
+        <code>Resources</code> class extending <code>Collection</code>. The model carries its own
+        validation rules in a <code>constraints</code> getter, so the same rule drives the form
+        input's error text, the submit button's disabled state, and the pre-save check.
+      </p>
+      <p>
+        Campaigns and targetables add a discriminated union on top: a <code>_cls</code> attribute
+        selects the concrete subclass, and a <code>disambiguateCampaign()</code> factory returns the
+        right one &mdash; 44 campaign classes descend from a shared base through per-channel
+        intermediates.
+      </p>
+
+      <div class="note">
+        <div class="note-label">Consequence</div>
+        <p>
+          Because the models are real classes with real validation, tests instantiate them directly
+          (<code>new Campaign({ &hellip; })</code>) instead of mocking them. A hand-rolled mock whose
+          <code>isValid()</code> always returns <code>true</code> passes tests the real constraint
+          would fail &mdash; which is why mocking blackbox models is banned outright in this repo.
+        </p>
+      </div>
+    </section>
+
+    <section id="writes">
+      <h2><span class="num">&sect;3</span>Writes, and the failure that doesn't throw</h2>
+
+      <p>
+        Writes go through the same collection. <code>model.set()</code> mutates observable
+        attributes and records the previous value in a shadow copy, which is what makes
+        <code>isDirty</code> and rollback possible; <code>patchDirty()</code> then sends only the
+        changed keys. The part that surprises everyone is the failure path.
+      </p>
+
+      <figure>
+        <div class="fig-scroll">
+          <svg viewBox="0 0 1000 306" role="img" aria-label="Write path: model.set marks attributes dirty, patchDirty sends a PATCH through the collection and wretch to the API. A 2xx response clears the error state, a 4xx or 5xx sets isErrored while still resolving the promise, and a 401 triggers a global logout.">
+            <defs>
+              <marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah"></polygon>
+              </marker>
+              <marker id="a3w" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah-warn"></polygon>
+              </marker>
+            </defs>
+
+            <rect class="bx" x="24" y="30" width="180" height="74" rx="7"></rect>
+            <text class="t" x="114" y="60" text-anchor="middle">model.set({&hellip;})</text>
+            <text class="t-sub" x="114" y="80" text-anchor="middle">isDirty &middot; shadowAttributes</text>
+
+            <rect class="bx" x="248" y="30" width="170" height="74" rx="7"></rect>
+            <text class="t" x="333" y="60" text-anchor="middle">patchDirty()</text>
+            <text class="t-sub" x="333" y="80" text-anchor="middle">changed keys only</text>
+
+            <rect class="bx-lead" x="462" y="30" width="170" height="74" rx="7"></rect>
+            <text class="t" x="547" y="60" text-anchor="middle">Collection.patch</text>
+            <text class="t-sub" x="547" y="80" text-anchor="middle">@action</text>
+
+            <rect class="bx" x="676" y="30" width="140" height="74" rx="7"></rect>
+            <text class="t" x="746" y="60" text-anchor="middle">wretch</text>
+            <text class="t-sub" x="746" y="80" text-anchor="middle">PATCH</text>
+
+            <rect class="bx-warn" x="860" y="30" width="128" height="74" rx="7"></rect>
+            <text class="t" x="924" y="60" text-anchor="middle">API</text>
+            <text class="t-sub" x="924" y="80" text-anchor="middle">responds</text>
+
+            <line class="ln" x1="204" y1="67" x2="246" y2="67" marker-end="url(#a3)"></line>
+            <line class="ln" x1="418" y1="67" x2="460" y2="67" marker-end="url(#a3)"></line>
+            <line class="ln" x1="632" y1="67" x2="674" y2="67" marker-end="url(#a3)"></line>
+            <line class="ln-warn" x1="816" y1="67" x2="858" y2="67" marker-end="url(#a3w)"></line>
+
+            <rect class="bx-lead" x="80" y="176" width="272" height="82" rx="7"></rect>
+            <text class="t" x="216" y="204" text-anchor="middle">processJSONResponse</text>
+            <text class="t-sub" x="216" y="224" text-anchor="middle">attributes replaced, isDirty cleared,</text>
+            <text class="t-sub" x="216" y="242" text-anchor="middle">isErrored reset to false</text>
+
+            <rect class="bx-warn" x="396" y="176" width="286" height="82" rx="7"></rect>
+            <text class="t" x="539" y="204" text-anchor="middle">processErrorResponse</text>
+            <text class="t-sub" x="539" y="224" text-anchor="middle">isErrored = true, error populated &mdash;</text>
+            <text class="t-sub" x="539" y="242" text-anchor="middle">and the promise still resolves</text>
+
+            <rect class="bx-warn" x="726" y="176" width="262" height="82" rx="7"></rect>
+            <text class="t" x="857" y="204" text-anchor="middle">feathrLogout()</text>
+            <text class="t-sub" x="857" y="224" text-anchor="middle">clears the cookie and redirects</text>
+            <text class="t-sub" x="857" y="242" text-anchor="middle">to the login app</text>
+
+            <polyline class="ln" points="900,104 900,140 216,140 216,174" marker-end="url(#a3)"></polyline>
+            <text class="t-edge" x="300" y="132" text-anchor="middle">2xx</text>
+
+            <polyline class="ln-warn" points="924,104 924,152 539,152 539,174" marker-end="url(#a3w)"></polyline>
+            <text class="t-edge-warn" x="620" y="146" text-anchor="middle">4xx / 5xx</text>
+
+            <line class="ln-warn" x1="952" y1="104" x2="952" y2="174" marker-end="url(#a3w)"></line>
+            <text class="t-edge-warn" x="960" y="146">401 &mdash; anywhere in the app</text>
+
+            <text class="t-sub" x="24" y="292">A malformed 2xx body with no id throws inside processJSONResponse &mdash; the one place a write really does reject.</text>
+          </svg>
+        </div>
+        <figcaption>
+          <b>A failed save resolves.</b> <code>patch</code> converts a non-2xx response into state on
+          the model &mdash; <code>isErrored</code>, <code>error</code> &mdash; and returns the model as normal, so
+          a <code>try/catch</code> around a save never fires. Code that needs to know whether the
+          write landed has to read the flag. A 401 is the exception: it fires
+          <code>globalThis.feathrLogout()</code> from inside the fetch wrapper, bypassing the caller
+          entirely.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="reactivity">
+      <h2><span class="num">&sect;4</span>The reactivity contract</h2>
+
+      <p>
+        Three rules hold the whole MobX layer together, and each of them fails silently when broken &mdash;
+        no exception, no warning, just a component that shows stale data.
+      </p>
+
+      <div class="cards">
+        <div class="card">
+          <h4>observer()</h4>
+          <p>
+            A component that reads <code>model.get()</code>, <code>model.isPending</code>, or
+            <code>collection.list()</code> must be wrapped in <code>observer</code> from
+            <code>mobx-react-lite</code>. Without it, the first render is correct and no render ever
+            follows.
+          </p>
+        </div>
+        <div class="card">
+          <h4>get / set only</h4>
+          <p>
+            Read through <code>model.get(key)</code> and write through <code>model.set({ &hellip; })</code>.
+            Assigning to an attribute directly skips the observable, the dirty tracking, and the
+            shadow copy that rollback depends on.
+          </p>
+        </div>
+        <div class="card">
+          <h4>get() never returns undefined</h4>
+          <p>
+            <code>Collection.get(unknownId)</code> creates and returns a placeholder model rather
+            than <code>undefined</code>. Absence has to be detected from the model's own state, not
+            from a null check.
+          </p>
+        </div>
+      </div>
+
+      <p>
+        Two smaller edges follow from the same design. Models created through
+        <code>Collection.create()</code> are marked ephemeral until saved, and helper code branches
+        on that flag &mdash; an unsaved row gets spliced out of an array where a saved one gets archived
+        through the API. And every model holds a reference back to its collection, which holds a map
+        containing the model, so any attempt to serialize one produces a circular structure.
+      </p>
+    </section>
+
+    <section id="stores">
+      <h2><span class="num">&sect;5</span>Two stores, one set of report cards</h2>
+
+      <p>
+        A Feathr report can be read two ways: by a logged-in user inside extender, or by a donor or
+        board member opening a public share link. Both render the same card components, so the
+        difference is pushed entirely into which store is above them.
+      </p>
+
+      <figure>
+        <div class="fig-scroll">
+          <svg viewBox="0 0 860 292" role="img" aria-label="The extender app provides an AuthenticatedStore and the public reports app provides a ReportStore; AuthenticatedStore extends ReportStore, and both feed the same report card components in report_components.">
+            <defs>
+              <marker id="a4" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah"></polygon>
+              </marker>
+              <marker id="a4p" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah-pub"></polygon>
+              </marker>
+            </defs>
+
+            <rect class="bx-lead" x="24" y="20" width="336" height="62" rx="7"></rect>
+            <text class="t-name" x="192" y="46" text-anchor="middle">extender &mdash; signed in</text>
+            <text class="t-sub" x="192" y="66" text-anchor="middle">JWT cookie + AccountId header on every request</text>
+
+            <rect class="bx-pub" x="496" y="20" width="336" height="62" rx="7"></rect>
+            <text class="t-name" x="664" y="46" text-anchor="middle">reports &mdash; public link</text>
+            <text class="t-sub" x="664" y="66" text-anchor="middle">no login, no account context</text>
+
+            <rect class="bx-lead" x="24" y="122" width="336" height="72" rx="7"></rect>
+            <text class="t" x="192" y="150" text-anchor="middle">AuthenticatedStore</text>
+            <text class="t-sub" x="192" y="170" text-anchor="middle">Accounts, Users, Forms, Integrations,</text>
+            <text class="t-sub" x="192" y="186" text-anchor="middle">Permissions, Billing &mdash; ~40 more collections</text>
+
+            <rect class="bx-pub" x="496" y="122" width="336" height="72" rx="7"></rect>
+            <text class="t" x="664" y="150" text-anchor="middle">ReportStore</text>
+            <text class="t-sub" x="664" y="170" text-anchor="middle">Campaigns, Events, Flights, Stats,</text>
+            <text class="t-sub" x="664" y="186" text-anchor="middle">Segments, Creatives &mdash; 17 collections</text>
+
+            <rect class="bx" x="204" y="234" width="452" height="46" rx="7"></rect>
+            <text class="t" x="430" y="262" text-anchor="middle">the same report cards in report_components</text>
+
+            <line class="ln" x1="192" y1="82" x2="192" y2="120" marker-end="url(#a4)"></line>
+            <line class="ln-pub" x1="664" y1="82" x2="664" y2="120" marker-end="url(#a4p)"></line>
+
+            <line class="ln" x1="360" y1="158" x2="494" y2="158" marker-end="url(#a4)"></line>
+            <text class="t-edge" x="428" y="146" text-anchor="middle">extends</text>
+
+            <line class="ln" x1="290" y1="194" x2="290" y2="232" marker-end="url(#a4)"></line>
+            <line class="ln-pub" x1="570" y1="194" x2="570" y2="232" marker-end="url(#a4p)"></line>
+
+            <text class="t-sub" x="24" y="292">A card that needs an authenticated collection calls isAuthenticatedStore(store) and degrades instead of throwing.</text>
+          </svg>
+        </div>
+        <figcaption>
+          <b>Inheritance is what keeps one card set honest.</b> <code>AuthenticatedStore extends
+          ReportStore</code>, so a card written against the public store's collections works in both
+          contexts by construction; anything richer is behind a runtime guard. Both stores are plain
+          classes holding collection instances as fields, created once per app mount and handed down
+          through React context.
+        </figcaption>
+      </figure>
+
+      <h3>Identity, permission, and account scope</h3>
+      <p>
+        Above the store sits a small set of hooks that every page depends on. They are the reason a
+        page rarely has to think about the current account: the account id lives in the URL, and
+        these hooks read it.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Hook</th>
+              <th scope="col">Answers</th>
+              <th scope="col">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">useStore()</td>
+              <td>Which collections do I have?</td>
+              <td>Returns the store instance from context; throws outside a provider.</td>
+            </tr>
+            <tr>
+              <td class="mono">useAccount()</td>
+              <td>Which account am I in?</td>
+              <td>Resolved from the <code>:accountId</code> URL segment. Ephemeral on first render.</td>
+            </tr>
+            <tr>
+              <td class="mono">useUser()</td>
+              <td>Who is signed in?</td>
+              <td>Also carries per-user settings such as dark mode and dev-nav visibility.</td>
+            </tr>
+            <tr>
+              <td class="mono">useFlags()</td>
+              <td>Is this feature on?</td>
+              <td>38 flags, merged account-then-user, kept in sync by a MobX reaction.</td>
+            </tr>
+            <tr>
+              <td class="mono">useRole()</td>
+              <td>May this user do it?</td>
+              <td>Derives <code>can*</code> / <code>has*</code> flags from the user's role model plus license.</td>
+            </tr>
+            <tr>
+              <td class="mono">useLocalUrl()</td>
+              <td>What is the link for this page?</td>
+              <td>Prefixes any internal path with the current account id; leaves external URLs alone.</td>
+            </tr>
+            <tr>
+              <td class="mono">useActionBar()</td>
+              <td>What buttons belong at the bottom?</td>
+              <td>Page-level save / cancel actions, rendered by the layout rather than the page.</td>
+            </tr>
+            <tr>
+              <td class="mono">useNavigation()</td>
+              <td>What state is the sidebar in?</td>
+              <td>Minimized state and active secondary nav; persisted to localStorage.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="boot">
+      <h2><span class="num">&sect;6</span>Boot, providers, and the gates on a route</h2>
+
+      <p>
+        Extender's startup is a short chain with one hard stop at the front and a stack of soft gates
+        at the back. Nothing renders until there is a session; once there is, the route table itself
+        changes shape according to licence, role, flags, and onboarding progress.
+      </p>
+
+      <figure>
+        <div class="fig-scroll">
+          <svg viewBox="0 0 1000 330" role="img" aria-label="Boot chain: index.tsx checks the session and redirects to login if absent, initializes Sentry, PostHog and MSW, mounts AppWrapper's provider stack, then App prefetches account and user, AppLayout renders the chrome, and Routes applies licence, role, flag and onboarding gates before a page renders.">
+            <defs>
+              <marker id="a5" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah"></polygon>
+              </marker>
+              <marker id="a5w" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah-warn"></polygon>
+              </marker>
+              <marker id="a5s" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+                <polygon points="0,0 7,3.2 0,6.4" class="ah-soft"></polygon>
+              </marker>
+            </defs>
+
+            <rect class="bx" x="24" y="30" width="152" height="70" rx="7"></rect>
+            <text class="t" x="100" y="58" text-anchor="middle">index.tsx</text>
+            <text class="t-sub" x="100" y="78" text-anchor="middle">Session.isLoggedIn?</text>
+
+            <rect class="bx-warn" x="24" y="150" width="152" height="60" rx="7"></rect>
+            <text class="t" x="100" y="176" text-anchor="middle">login app</text>
+            <text class="t-sub" x="100" y="194" text-anchor="middle">?from= this URL</text>
+
+            <rect class="bx" x="212" y="30" width="152" height="70" rx="7"></rect>
+            <text class="t" x="288" y="54" text-anchor="middle">init</text>
+            <text class="t-sub" x="288" y="72" text-anchor="middle">Sentry &middot; PostHog</text>
+            <text class="t-sub" x="288" y="88" text-anchor="middle">MSW &middot; Collection headers</text>
+
+            <rect class="bx-lead" x="400" y="20" width="180" height="90" rx="7"></rect>
+            <text class="t-name" x="490" y="46" text-anchor="middle">AppWrapper</text>
+            <text class="t-sub" x="490" y="66" text-anchor="middle">i18n &middot; store &middot; PostHog</text>
+            <text class="t-sub" x="490" y="82" text-anchor="middle">Router &middot; Mantine</text>
+            <text class="t-sub" x="490" y="98" text-anchor="middle">Modals &middot; ActionBar</text>
+
+            <rect class="bx" x="616" y="30" width="152" height="70" rx="7"></rect>
+            <text class="t" x="692" y="54" text-anchor="middle">App</text>
+            <text class="t-sub" x="692" y="72" text-anchor="middle">prefetch account + user</text>
+            <text class="t-sub" x="692" y="88" text-anchor="middle">theme &middot; analytics</text>
+
+            <rect class="bx" x="804" y="30" width="172" height="70" rx="7"></rect>
+            <text class="t" x="890" y="54" text-anchor="middle">AppLayout</text>
+            <text class="t-sub" x="890" y="72" text-anchor="middle">primary + secondary nav</text>
+            <text class="t-sub" x="890" y="88" text-anchor="middle">action bar &middot; toasts</text>
+
+            <rect class="bx-lead" x="616" y="182" width="360" height="118" rx="7"></rect>
+            <text class="t-name" x="796" y="208" text-anchor="middle">Routes &mdash; the gate stack</text>
+            <line class="ln-soft" x1="632" y1="220" x2="960" y2="220"></line>
+            <text class="t-sub" x="632" y="240">no active licence &rarr; only Settings, redirect to billing</text>
+            <text class="t-sub" x="632" y="260">role missing permission &rarr; 403 page</text>
+            <text class="t-sub" x="632" y="280">flag off / onboarding incomplete &rarr; route not mounted</text>
+
+            <rect class="bx-ghost" x="400" y="182" width="180" height="60" rx="7"></rect>
+            <text class="t-sub" x="490" y="206" text-anchor="middle">/perch &rarr; lazy chunk</text>
+            <text class="t-sub" x="490" y="224" text-anchor="middle">separate layout + routes</text>
+
+            <line class="ln" x1="176" y1="65" x2="210" y2="65" marker-end="url(#a5)"></line>
+            <text class="t-edge" x="193" y="54" text-anchor="middle">yes</text>
+            <line class="ln-warn" x1="100" y1="100" x2="100" y2="148" marker-end="url(#a5w)"></line>
+            <text class="t-edge-warn" x="108" y="128">no</text>
+
+            <line class="ln" x1="364" y1="65" x2="398" y2="65" marker-end="url(#a5)"></line>
+            <line class="ln" x1="580" y1="65" x2="614" y2="65" marker-end="url(#a5)"></line>
+            <line class="ln" x1="768" y1="65" x2="802" y2="65" marker-end="url(#a5)"></line>
+
+            <line class="ln" x1="890" y1="100" x2="890" y2="180" marker-end="url(#a5)"></line>
+            <text class="t-edge" x="898" y="146">renders</text>
+
+            <line class="ln-soft" x1="490" y1="110" x2="490" y2="180" marker-end="url(#a5s)"></line>
+
+            <text class="t-sub" x="24" y="322">The URL carries the account: /:accountId/marketing/campaigns &mdash; useAccount reads it, useLocalUrl writes it back into every internal link.</text>
+          </svg>
+        </div>
+        <figcaption>
+          <b>Gating removes routes, it does not hide pages.</b> Routes is a React component that
+          reads flags, role, licence, and onboarding state and returns a different
+          <code>&lt;Switch&gt;</code> as a result &mdash; so a feature that is off has no route at all, and
+          a direct URL lands on 404 rather than a blank page. Roughly 160 route paths are split
+          across Marketing, Data, Events, Reports, Fundraise, and Settings route files.
+        </figcaption>
+      </figure>
+
+      <div class="note warn">
+        <div class="note-label">Failure mode worth knowing</div>
+        <p>
+          Because the account is fetched rather than embedded, a deep link can arrive before the
+          store has hydrated it &mdash; the route resolves against an account that is still pending and
+          404s. Warming a known-good page first, then navigating in-app, is the usual workaround when
+          this bites in tests or automation.
+        </p>
+      </div>
+    </section>
+
+    <section id="ui">
+      <h2><span class="num">&sect;7</span>The UI layer</h2>
+
+      <p>
+        Presentation is deliberately narrow: app code composes <code>@feathr/components</code> and
+        Mantine layout primitives, and reaches for a raw HTML element almost never. The library
+        carries the design decisions so pages don't re-litigate them.
+      </p>
+
+      <h3>Inputs bind to models, not to state</h3>
+      <p>
+        Every form control ships in two shapes. The value shape is the familiar controlled input
+        with <code>value</code> and <code>onChange</code>. The model shape takes
+        <code>model</code> and <code>attribute</code> and writes straight through to the observable
+        model &mdash; which is why <code>components</code> has to depend on <code>rachis</code>.
+        Validation errors come from the model's own <code>constraints</code>, and
+        <code>FormSubmit</code> gates its button on <code>model.isValid()</code>, so a form
+        generally holds no local state at all.
+      </p>
+
+      <h3>Three layers of colour, one 4px grid</h3>
+      <p>
+        Styling is CSS Modules over CSS custom properties, with tokens layered so that intent stays
+        visible: a global ramp (<code>--color-cyan-700</code>) exists only to be pointed at by
+        semantic tokens (<code>--color-action</code>, <code>--color-bg-success-primary</code>), which
+        are what feature code uses; component-scoped tokens stay inside the library. Spacing is a
+        strict multiple of four, enforced by lint. The 2025 &ldquo;Midnight&rdquo; rebrand put deep navy on
+        primary actions with cyan for links and focus, and violet reserved for recommendation
+        surfaces so machine suggestions never look like the user's own choices.
+      </p>
+
+      <h3>Copy is data</h3>
+      <p>
+        Translation keys are the English strings themselves &mdash; <code>t('Save changes')</code> &mdash; so
+        there is no key catalogue to keep in sync and no indirection when reading a component. Keys
+        are extracted into <code>/locales/*.json</code> by a script. Casing carries meaning: title
+        case for page and section headings, sentence case for labels, buttons, and everything else a
+        person reads mid-task.
+      </p>
+    </section>
+
+    <section id="build">
+      <h2><span class="num">&sect;8</span>Build and delivery</h2>
+
+      <p>
+        Turborepo runs the graph; each app has its own Webpack 5 config layered over a shared base.
+        The base config is where the frontend learns about the outside world: backend URLs, third
+        party keys, and the CDN path are all resolved from <code>SHRIKE_ENV</code> at build time and
+        compiled in as globals, so there is no runtime configuration fetch.
+      </p>
+
+      <div class="cards">
+        <div class="card">
+          <h4>Backends, per environment</h4>
+          <p>
+            <code>BLACKBOX_URL</code> is the main API. Three siblings sit beside it: a short-link
+            service, a preview/render service for creatives, and an asset CDN. Local development
+            points them at <code>local.feathr.app</code>.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Assets are commit-addressed</h4>
+          <p>
+            <code>publicPath</code> embeds the build's short SHA, taken from CI's commit variable so
+            the URL and the S3 upload path cannot disagree. Deploys ship a ref, not a build artifact.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Previews per pull request</h4>
+          <p>
+            CI on GitHub Actions builds a Scout preview for each PR and posts its link back on the
+            pull request, alongside lint, type check, test, and Sonar results.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Parallel worktrees</h4>
+          <p>
+            Dev-server ports are offset by a hash of the worktree directory name, so several branches
+            can run at once. Only the main checkout uses the base ports.
+          </p>
+        </div>
+      </div>
+
+      <p>
+        Libraries are built, not aliased: <code>yarn build:library</code> compiles the seven shared
+        packages to <code>dist/</code>, and <code>yarn watch</code> keeps <code>components</code> and
+        <code>report_components</code> rebuilding during development. Turbo caches those outputs &mdash; and
+        because a worktree shares the primary checkout's cache, a stale entry can hand you a
+        <code>dist/</code> that does not match your source. When the browser disagrees with the code,
+        check what is actually in the served bundle before believing either one.
+      </p>
+    </section>
+
+    <section id="gates">
+      <h2><span class="num">&sect;9</span>Quality gates</h2>
+
+      <p>
+        Roughly one file in six is a test. Jest runs one project per package, and the shared setup in
+        <code>@feathr/testing</code> applies to all of them without any test opting in &mdash; which makes a
+        few of its choices worth knowing before debugging a failure.
+      </p>
+
+      <ul>
+        <li>
+          <strong>A <code>console.error</code> fails the test.</strong> Unhandled MSW requests are
+          reported that way too, so &ldquo;unhandled GET&rdquo; means a missing handler, not a flaky network.
+        </li>
+        <li>
+          <strong>Timers are partially faked.</strong> <code>Date</code> and
+          <code>requestAnimationFrame</code> are faked while <code>setTimeout</code> stays real &mdash;
+          so a Mantine transition needs the fake clock advanced, and a debounce needs it turned off.
+        </li>
+        <li>
+          <strong>CI retries twice, locally never.</strong> A green CI run is not proof a flake is
+          fixed; a local failure is real.
+        </li>
+        <li>
+          <strong>Async work can outlive its suite.</strong> An unawaited write settles during an
+          unrelated test and fails that one instead &mdash; the reporting test is the victim, not the cause.
+        </li>
+      </ul>
+
+      <p>
+        Beyond Jest: ESLint carries repo-specific rules that encode the conventions above (no mocked
+        i18n, no module-level store, no <code>any</code> in tests), Stylelint guards the CSS,
+        Storybook plus Chromatic cover the component library visually, and a contract gate checks
+        that no <code>data-name</code> attribute relied on by the Playwright end-to-end suite in the
+        sibling repo has been deleted &mdash; a cross-repo break that would otherwise only surface after
+        merge.
+      </p>
+
+      <footer>
+        <p>
+          Written from the repository at <code>main</code>. The authoritative details live next to
+          the code: <code>CLAUDE.md</code> for commands and layout, <code>CONTRIBUTING.md</code> for
+          workflow, <code>CODING_GUIDELINES.md</code> for style and MobX gotchas,
+          <code>TESTING.md</code> for the test harness, <code>DESIGN.md</code> and
+          <code>THEME.md</code> for tokens, and <code>UI_PATTERNS.md</code> for the repeated
+          interaction patterns.
+        </p>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<script>
+  /* Scroll the rail links by script rather than by fragment navigation. Hosts that
+     embed the page in an iframe can swallow a `#hash` jump — an injected <base>
+     re-points it at another document, an about:srcdoc URL turns it into a fresh
+     navigation, and a framework harness may treat the hash change as a route.
+     preventDefault avoids the navigation entirely and scrolls the element instead. */
+  (function () {
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest('a[href^="#"]');
+      if (!link) return;
+      var target = document.getElementById(link.getAttribute('href').slice(1));
+      if (!target) return;
+      event.preventDefault();
+      target.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+      /* Keyboard users need focus to follow the jump, as it would on a real anchor. */
+      target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+    });
+  })();
+</script>
+
+</body>
+</html>
