@@ -3,6 +3,8 @@ import { notFound } from "@tanstack/react-router";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { ReliquaryError } from "./errors";
+import { getGuestArtifact, getGuestCollection, getGuestLibrary } from "./guest";
+import { optionalSessionMiddleware } from "./optional-session";
 import { artifactCreateSchema, artifactPatchSchema, collectionCreateSchema } from "./schema";
 import type { Artifact, Collection, Library } from "./types";
 import type { McpTokenMeta } from "./mcp-token.server";
@@ -27,17 +29,23 @@ export const getAuthOptions = createServerFn({ method: "GET" }).handler(
 );
 
 export const getLibrary = createServerFn({ method: "GET" })
-  .middleware([authMiddleware])
+  .middleware([optionalSessionMiddleware])
   .handler(async ({ context }): Promise<Library> => {
+    if (!context.userId) return getGuestLibrary();
     const { getLibrary: load } = await import("./store.server");
     return load(context.userId);
   });
 
 export const getArtifact = createServerFn({ method: "GET" })
   .validator(z.object({ slug: z.string().min(1) }))
-  .middleware([authMiddleware])
+  .middleware([optionalSessionMiddleware])
   .handler(async ({ context, data }): Promise<Artifact> => {
     try {
+      if (!context.userId) {
+        const artifact = getGuestArtifact(data.slug);
+        if (!artifact) throw notFound();
+        return artifact;
+      }
       const { getArtifact: load } = await import("./store.server");
       return await load(context.userId, data.slug);
     } catch (err) {
@@ -58,9 +66,17 @@ export const getPublicArtifact = createServerFn({ method: "GET" })
 
 export const getCollectionPage = createServerFn({ method: "GET" })
   .validator(z.object({ slug: z.string().min(1) }))
-  .middleware([authMiddleware])
+  .middleware([optionalSessionMiddleware])
   .handler(async ({ context, data }) => {
     try {
+      if (!context.userId) {
+        const collection = getGuestCollection(data.slug);
+        if (!collection) throw notFound();
+        return { collection, library: getGuestLibrary() } as {
+          collection: Collection;
+          library: Library;
+        };
+      }
       const store = await import("./store.server");
       const collection = await store.getCollection(context.userId, data.slug);
       const library = await store.getLibrary(context.userId);

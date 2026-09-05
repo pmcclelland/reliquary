@@ -75,9 +75,25 @@ export function AppShell({
             <ThemeToggle />
           </div>
         </header>
+        {library.guest ? <GuestBanner /> : null}
         {children}
       </div>
       <CommandPalette library={library} />
+    </div>
+  );
+}
+
+function GuestBanner() {
+  return (
+    <div className="border-b border-border bg-surface-muted px-4 py-2.5 text-sm text-muted">
+      Sample library.{" "}
+      <Link
+        to="/login"
+        className="text-fg underline decoration-border underline-offset-4 hover:text-accent"
+      >
+        Sign in
+      </Link>{" "}
+      to keep your own artifacts.
     </div>
   );
 }

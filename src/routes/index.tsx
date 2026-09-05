@@ -3,7 +3,6 @@ import { z } from "zod";
 import { ArtifactCard } from "@/components/artifact/card";
 import { AppShell } from "@/components/layout/app-shell";
 import { Input } from "@/components/ui/input";
-import { requireSession } from "@/lib/auth/protect";
 import { getLibrary } from "@/lib/reliquary/functions";
 import type { ArtifactSummary, Collection } from "@/lib/reliquary/types";
 
@@ -14,9 +13,6 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
-  beforeLoad: ({ context }) => {
-    requireSession(context);
-  },
   loader: async () => getLibrary(),
   component: Home,
 });

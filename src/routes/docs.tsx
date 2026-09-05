@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { requireSession } from "@/lib/auth/protect";
 import {
   createMcpTokenFn,
   getLibrary,
@@ -33,9 +32,6 @@ type TokenRow = {
 };
 
 export const Route = createFileRoute("/docs")({
-  beforeLoad: ({ context }) => {
-    requireSession(context);
-  },
   loader: () => getLibrary(),
   component: DocsPage,
 });
@@ -50,10 +46,11 @@ function DocsPage() {
   const [revokeId, setRevokeId] = useState<string | null>(null);
   useEffect(() => {
     setOrigin(window.location.origin);
+    if (library.guest) return;
     void listMcpTokensFn()
       .then(setTokens)
       .catch(() => setTokens([]));
-  }, []);
+  }, [library.guest]);
   const mcpUrl = origin ? `${origin}/api/mcp` : "/api/mcp";
   const revealedSecret = revealed?.token;
   const revokeTarget = tokens.find((row) => row.id === revokeId);
@@ -130,6 +127,17 @@ function DocsPage() {
           per agent so you can revoke one without disconnecting the others.
         </p>
         <Pre>{mcpUrl}</Pre>
+        {library.guest ? (
+          <p className="mt-6 text-sm text-muted">
+            <Link
+              to="/login"
+              className="text-fg underline decoration-border underline-offset-4 hover:text-accent"
+            >
+              Sign in
+            </Link>{" "}
+            to issue MCP tokens for your own library.
+          </p>
+        ) : (
         <form
           className="mt-6 space-y-3 rounded-lg bg-surface p-4 shadow-border"
           onSubmit={(event) => void onCreate(event)}
@@ -152,7 +160,8 @@ function DocsPage() {
             Add token
           </Button>
         </form>
-        {revealedSecret ? (
+        )}
+        {library.guest ? null : revealedSecret ? (
           <div className="mt-4 rounded-lg bg-surface p-4 shadow-border">
             <p className="text-xs font-medium tracking-[0.14em] text-subtle uppercase">
               {revealed?.name} — copy now
@@ -163,6 +172,7 @@ function DocsPage() {
             </p>
           </div>
         ) : null}
+        {library.guest ? null : (
         <ul className="mt-4 space-y-2">
           {tokens.length === 0 ? (
             <li className="text-sm text-muted">
@@ -205,6 +215,7 @@ function DocsPage() {
             ))
           )}
         </ul>
+        )}
         <p className="mt-4 text-sm text-muted">
           Cursor / Claude Code HTTP config:
         </p>

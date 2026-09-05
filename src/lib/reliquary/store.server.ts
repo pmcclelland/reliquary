@@ -2,6 +2,7 @@ import { getSql } from "@/lib/db";
 import { MAX_HTML_BYTES } from "./constants";
 import { ReliquaryError, notFound } from "./errors";
 import { inferKind } from "./kind";
+import { getGuestArtifact } from "./guest";
 import { SEED_ARTIFACTS, SEED_COLLECTIONS } from "./seed";
 import { slugify } from "./slug";
 import type {
@@ -330,7 +331,11 @@ export async function getPublicArtifact(idOrSlug: string): Promise<Artifact> {
     order by case when a.id = ${idOrSlug} then 0 else 1 end
     limit 1
   `;
-  if (rows.length === 0) notFound("Artifact");
+  if (rows.length === 0) {
+    const guest = getGuestArtifact(idOrSlug);
+    if (guest) return guest;
+    notFound("Artifact");
+  }
   return mapArtifact(rows[0]!);
 }
 

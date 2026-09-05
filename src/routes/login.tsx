@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Vitrine } from "@/components/layout/vitrine";
@@ -110,6 +110,15 @@ function Login() {
             </h2>
             <p className="mt-2 text-sm text-muted">
               Each account is a private library, with its own MCP token.
+            </p>
+            <p className="mt-3 text-sm text-muted">
+              <Link
+                to="/"
+                className="text-fg underline decoration-border underline-offset-4 hover:text-accent"
+              >
+                Browse the sample library
+              </Link>{" "}
+              without signing in.
             </p>
 
             {!authEnabled ? (

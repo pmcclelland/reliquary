@@ -34,6 +34,8 @@ export type Collection = {
 export type Library = {
   collections: Collection[];
   artifacts: ArtifactSummary[];
+  /** True when this is the in-memory sample library for signed-out visitors. */
+  guest?: boolean;
 };
 
 export type ArtifactInput = {

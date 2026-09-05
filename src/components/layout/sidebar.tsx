@@ -79,9 +79,9 @@ export function Sidebar({
       </div>
       <div className="px-3 pb-3">
         <Button asChild className="w-full" size="md">
-          <Link to="/new" onClick={onNavigate}>
+          <Link to={library.guest ? "/login" : "/new"} onClick={onNavigate}>
             <Plus className="size-4" />
-            New artifact
+            {library.guest ? "Sign in to save" : "New artifact"}
           </Link>
         </Button>
       </div>
@@ -99,14 +99,16 @@ export function Sidebar({
         <div className="mt-4 px-2 pb-1">
           <div className="relative text-[11px] font-medium tracking-[0.16em] text-subtle uppercase">
             Collections
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              className="absolute top-1/2 right-0 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted hover:bg-surface-muted hover:text-fg after:absolute after:-inset-1 after:content-['']"
-              aria-label="New collection"
-            >
-              <FolderPlus className="size-3.5" />
-            </button>
+            {library.guest ? null : (
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="absolute top-1/2 right-0 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted hover:bg-surface-muted hover:text-fg after:absolute after:-inset-1 after:content-['']"
+                aria-label="New collection"
+              >
+                <FolderPlus className="size-3.5" />
+              </button>
+            )}
           </div>
         </div>
         {library.collections.map((col) => (
@@ -149,7 +151,15 @@ export function Sidebar({
       </nav>
 
       <div className="shrink-0 space-y-1 border-t border-border px-2 py-2">
-        <UserButton />
+        {library.guest ? (
+          <Button asChild variant="secondary" className="w-full" size="md">
+            <Link to="/login" onClick={onNavigate}>
+              Sign in
+            </Link>
+          </Button>
+        ) : (
+          <UserButton />
+        )}
         <ThemeToggle variant="row" side="top" align="start" />
       </div>
 

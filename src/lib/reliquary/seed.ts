@@ -1,3 +1,4 @@
+/** Sample shelves copied into a new account, and shown in-memory to guests. */
 export const SEED_COLLECTIONS = [
   {
     id: "col-guides",
@@ -376,6 +377,7 @@ export const SEED_TESSERA_HTML = `<!DOCTYPE html>
 </html>
 `;
 
+/** Sample relics copied into a new account, and shown in-memory to guests. */
 export const SEED_ARTIFACTS = [
   {
     id: "art-welcome",
