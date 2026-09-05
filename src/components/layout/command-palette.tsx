@@ -50,8 +50,9 @@ export function CommandPalette({ library }: { library: Library }) {
           heading="Actions"
           className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-[0.14em] [&_[cmdk-group-heading]]:text-subtle [&_[cmdk-group-heading]]:uppercase"
         >
-          <Item onSelect={() => go("/new")}>
-            <Plus className="size-3.5" /> New artifact
+          <Item onSelect={() => go(library.guest ? "/login" : "/new")}>
+            <Plus className="size-3.5" />
+            {library.guest ? "Sign in to save" : "New artifact"}
           </Item>
           <Item onSelect={() => go("/docs")}>
             <FileCode2 className="size-3.5" /> API & MCP

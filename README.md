@@ -4,7 +4,7 @@ A wiki of living artifacts.
 
 [![Reliquary](public/og.jpg)](https://reliquary.pmcclel.land)
 
-Self-contained HTML — pages, motion studies, and small interfaces — filed like notes in a quiet archive. Sign in with Google or email; each account is a private library, with its own MCP tokens.
+Self-contained HTML — pages, motion studies, and small interfaces — filed like notes in a quiet archive. Visitors can browse a seeded sample library without signing in. Sign in with Google or email for a private library, with its own MCP tokens.
 
 **[reliquary.pmcclel.land](https://reliquary.pmcclel.land)**
 
@@ -22,8 +22,8 @@ A collection is a shelf. Give it a title and an optional description — the lin
 
 | View | URL |
 | --- | --- |
-| Sign in | `/login` |
-| Library | `/` |
+| Sign in | `/login` — or browse the sample library on `/` without an account |
+| Library | `/` — sample shelves when signed out; your shelves when signed in |
 | Wiki page | `/a/:slug` |
 | Live share | `/s/:slug` — thin Reliquary bar, full-bleed artifact |
 | Collection | `/c/:slug` |

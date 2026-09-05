@@ -31,15 +31,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { requireSession } from "@/lib/auth/protect";
 import { deleteArtifactFn, getArtifact, getLibrary } from "@/lib/reliquary/functions";
 import type { Artifact, Library } from "@/lib/reliquary/types";
 import { artifactShareUrl, copyText, formatBytes, formatRelative } from "@/lib/utils";
 
 export const Route = createFileRoute("/a/$slug")({
-  beforeLoad: ({ context }) => {
-    requireSession(context);
-  },
   loader: async ({ params }) => {
     const [library, artifact] = await Promise.all([
       getLibrary(),
@@ -151,15 +147,21 @@ function ArtifactPage() {
               <Link2 className="size-4" />
               Share
             </Button>
-            <Button asChild size="sm" variant="secondary">
-              <Link
-                to="/a/$slug/edit"
-                params={{ slug: artifact.slug }}
-              >
-                <Pencil className="size-4" />
-                Edit
-              </Link>
-            </Button>
+            {library.guest ? (
+              <Button asChild size="sm">
+                <Link to="/login">Sign in to save</Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm" variant="secondary">
+                <Link
+                  to="/a/$slug/edit"
+                  params={{ slug: artifact.slug }}
+                >
+                  <Pencil className="size-4" />
+                  Edit
+                </Link>
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon-sm" aria-label="More">
@@ -174,14 +176,18 @@ function ArtifactPage() {
                 <DropdownMenuItem onSelect={() => void copyHtml()}>
                   Copy HTML
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-danger"
-                  onSelect={() => setConfirm(true)}
-                >
-                  <Trash2 className="size-3.5" />
-                  Delete
-                </DropdownMenuItem>
+                {library.guest ? null : (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-danger"
+                      onSelect={() => setConfirm(true)}
+                    >
+                      <Trash2 className="size-3.5" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

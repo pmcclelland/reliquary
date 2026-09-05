@@ -12,15 +12,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { requireSession } from "@/lib/auth/protect";
 import { deleteCollectionFn, getCollectionPage } from "@/lib/reliquary/functions";
 import type { Collection, Library } from "@/lib/reliquary/types";
 import { useState } from "react";
 
 export const Route = createFileRoute("/c/$slug")({
-  beforeLoad: ({ context }) => {
-    requireSession(context);
-  },
   loader: ({ params }) => getCollectionPage({ data: { slug: params.slug } }),
   component: CollectionPage,
 });
@@ -62,9 +58,11 @@ function CollectionPage() {
               <p className="mt-2 max-w-xl text-muted">{collection.description}</p>
             ) : null}
           </div>
-          <Button variant="ghost" onClick={() => setConfirm(true)}>
-            Remove collection
-          </Button>
+          {library.guest ? null : (
+            <Button variant="ghost" onClick={() => setConfirm(true)}>
+              Remove collection
+            </Button>
+          )}
         </div>
         {artifacts.length === 0 ? (
           <p className="mt-16 text-muted">This shelf is empty.</p>
