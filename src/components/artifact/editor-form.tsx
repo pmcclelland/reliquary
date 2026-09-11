@@ -187,7 +187,7 @@ export function EditorForm({
             variant="secondary"
             onClick={() => fileRef.current?.click()}
           >
-            Upload .html
+            Choose .html
           </Button>
           <p className="text-xs text-subtle tabular-nums">{formatBytes(bytes)}</p>
         </div>
