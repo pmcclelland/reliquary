@@ -151,8 +151,9 @@ export function HistorySheet({
                       revisions.length,
                       revisions.findIndex((row) => row.id === selected.id),
                     )}{" "}
-                    · {formatHistoryWhen(selected.createdAt)} ·{" "}
-                    {formatBytes(selected.htmlBytes)}
+                    · {formatHistoryWhen(selected.createdAt)}
+                    {selected.authorLabel ? ` · ${selected.authorLabel}` : ""}{" "}
+                    · {formatBytes(selected.htmlBytes)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -260,6 +261,7 @@ function RevisionRow({
         </span>
         <span className="mt-1 block truncate text-xs text-subtle tabular-nums">
           {formatHistoryWhen(row.createdAt)}
+          {row.authorLabel ? ` · ${row.authorLabel}` : ""}
           {row.title ? ` · ${row.title}` : ""}
         </span>
       </button>

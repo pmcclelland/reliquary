@@ -14,6 +14,7 @@ import type {
  * is a fallback snapshot from save time — not the source of truth, and not
  * periodically synced. Clearing `source_artifact_id` (a content edit that
  * diverges) stops following; collection/slug edits do not.
+ * Allowlisted collaborators write the source instead of forking.
  */
 
 /** Share-origin fields overlaid from the live source. */
@@ -125,9 +126,15 @@ export function followMeta(sourceArtifactId: string | null): {
   sourceArtifactId: string | null;
   following: boolean;
   followLive: boolean;
+  canEditSource: boolean;
 } {
   const id = sourceArtifactId?.trim() || null;
-  return { sourceArtifactId: id, following: Boolean(id), followLive: false };
+  return {
+    sourceArtifactId: id,
+    following: Boolean(id),
+    followLive: false,
+    canEditSource: !id,
+  };
 }
 
 function sameTags(a: string[], b: string[]): boolean {

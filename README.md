@@ -14,6 +14,8 @@ An artifact is a single HTML file. It can be a typographic essay, a canvas study
 
 Send a full document when you can. Fragments are wrapped in a simple page. A module that defines `function App()` is wrapped with React 18 and Babel standalone. CDNs are allowed; local file paths are not.
 
+The owner can let specific Reliquary accounts edit the live original. A share link or a saved copy is not enough.
+
 An optional explainer (HTML notes with `data-line` citations) can sit beside Source when someone asks for one. Lists and the live share view omit it.
 
 ## Collections

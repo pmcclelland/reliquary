@@ -43,15 +43,22 @@ export function getGuestArtifacts(): Artifact[] {
       sourceArtifactId: null,
       following: false,
       followLive: false,
+      canEditSource: false,
       html: art.html,
       explainerHtml: "",
+      collaboration: null,
     };
   });
 }
 
 export function getGuestLibrary(): Library {
   const artifacts: ArtifactSummary[] = getGuestArtifacts().map(
-    ({ html: _html, explainerHtml: _explainer, ...summary }) => summary,
+    ({
+      html: _html,
+      explainerHtml: _explainer,
+      collaboration: _collaboration,
+      ...summary
+    }) => summary,
   );
   return {
     collections: getGuestCollections(),

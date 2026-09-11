@@ -41,6 +41,7 @@ describe("guest library", () => {
     assert.equal(bySlug.title, "Welcome to Reliquary");
     assert.match(bySlug.html, /A place to keep things that move/);
     assert.equal(byId?.slug, "welcome");
+    assert.equal(bySlug.collaboration, null);
     assert.equal(getGuestArtifact("missing"), null);
   });
 
@@ -56,6 +57,7 @@ describe("guest library", () => {
       assert.equal(art.following, false);
       assert.equal(art.followLive, false);
       assert.equal(art.sourceArtifactId, null);
+      assert.equal(art.canEditSource, false);
     }
   });
 });

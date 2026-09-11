@@ -30,8 +30,10 @@ function localFollow(overrides: Partial<Artifact> = {}): Artifact {
     sourceArtifactId: "src-1",
     following: true,
     followLive: false,
+    canEditSource: false,
     html: "<!DOCTYPE html><html><body>wave</body></html>",
     explainerHtml: "<p>old notes</p>",
+    collaboration: null,
     ...overrides,
   };
 }
