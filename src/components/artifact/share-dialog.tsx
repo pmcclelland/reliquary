@@ -222,6 +222,11 @@ function CollaboratorsPanel({
           ))}
         </ul>
       )}
+      {!collaboration.enabled && collaboration.people.length > 0 ? (
+        <p className="mt-2 text-xs text-subtle">
+          Listed collaborators can’t edit while editing is off.
+        </p>
+      ) : null}
     </div>
   );
 }
