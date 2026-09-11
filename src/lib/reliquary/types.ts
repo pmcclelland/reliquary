@@ -13,6 +13,12 @@ export type ArtifactSummary = {
   hasExplainer: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Set when this row was saved from another relic and still follows it. */
+  sourceArtifactId: string | null;
+  /** True while `sourceArtifactId` is set — the row is a live follow. */
+  following: boolean;
+  /** True when this read resolved title/HTML/etc. from the live source. */
+  followLive: boolean;
 };
 
 export type Artifact = ArtifactSummary & {
@@ -55,11 +61,39 @@ export type ShareView = {
   artifact: Artifact;
   inLibrarySlug: string | null;
   signedIn: boolean;
+  /** The library row is a follow (not the original or a seed snapshot). */
+  following: boolean;
 };
 
 export type SaveToLibraryResult = {
   artifact: Artifact;
   created: boolean;
+};
+
+export type ArtifactRevisionSummary = {
+  id: string;
+  artifactId: string;
+  title: string;
+  description: string;
+  tags: string[];
+  kind: ArtifactKind;
+  hasExplainer: boolean;
+  htmlBytes: number;
+  createdAt: string;
+};
+
+export type ArtifactRevision = ArtifactRevisionSummary & {
+  html: string;
+  explainerHtml: string;
+};
+
+export type ArtifactHistory = {
+  artifact: Artifact;
+  revisions: ArtifactRevisionSummary[];
+  selected: ArtifactRevision | null;
+  /** True when this list is the live source's history, not the follow row. */
+  fromSource: boolean;
+  canRestore: boolean;
 };
 
 export type ArtifactPatch = Partial<ArtifactInput>;

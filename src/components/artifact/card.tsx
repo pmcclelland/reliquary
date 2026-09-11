@@ -33,6 +33,13 @@ export function ArtifactCard({ artifact }: { artifact: ArtifactSummary }) {
           ))}
         </div>
       )}
+      {artifact.following ? (
+        <p className="mt-3 text-xs text-subtle">
+          {artifact.followLive
+            ? "Updates with the original"
+            : "Original unavailable"}
+        </p>
+      ) : null}
     </Link>
   );
 }

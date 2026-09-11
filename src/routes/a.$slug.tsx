@@ -1,5 +1,7 @@
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import { z } from "zod";
 import {
+  Clock,
   Code2,
   Link2,
   Maximize2,
@@ -10,6 +12,8 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArtifactFrame } from "@/components/artifact/frame";
+import { FollowNote } from "@/components/artifact/follow-note";
+import { HistorySheet } from "@/components/artifact/history-sheet";
 import { SourceView } from "@/components/artifact/source-view";
 import { ShareLinkDialog } from "@/components/artifact/share-dialog";
 import { AppShell } from "@/components/layout/app-shell";
@@ -32,10 +36,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deleteArtifactFn, getArtifact, getLibrary } from "@/lib/reliquary/functions";
+import { parseHistorySearch } from "@/lib/reliquary/revisions";
 import type { Artifact, Library } from "@/lib/reliquary/types";
 import { artifactShareUrl, copyText, formatBytes, formatRelative } from "@/lib/utils";
 
 export const Route = createFileRoute("/a/$slug")({
+  validateSearch: z.object({
+    history: z.string().optional(),
+  }),
   loader: async ({ params }) => {
     const [library, artifact] = await Promise.all([
       getLibrary(),
@@ -52,10 +60,21 @@ function ArtifactPage() {
     artifact: Artifact;
   };
   const router = useRouter();
+  const { history: historySearch } = Route.useSearch();
+  const historyPullout = parseHistorySearch(historySearch);
   const [source, setSource] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const bytes = new TextEncoder().encode(artifact.html).length;
+
+  function setHistoryOpen(open: boolean) {
+    void router.navigate({
+      to: "/a/$slug",
+      params: { slug: artifact.slug },
+      search: open ? { history: "open" } : {},
+      replace: true,
+    });
+  }
 
   async function onDelete() {
     try {
@@ -115,6 +134,7 @@ function ArtifactPage() {
                 {artifact.description}
               </p>
             ) : null}
+            <FollowNote artifact={artifact} />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge>{artifact.kind === "react" ? "React" : "HTML"}</Badge>
               {artifact.tags.map((tag) => (
@@ -178,6 +198,10 @@ function ArtifactPage() {
                 </DropdownMenuItem>
                 {library.guest ? null : (
                   <>
+                    <DropdownMenuItem onSelect={() => setHistoryOpen(true)}>
+                      <Clock className="size-3.5" />
+                      History
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-danger"
@@ -205,6 +229,18 @@ function ArtifactPage() {
         </div>
       </div>
 
+      {library.guest ? null : (
+        <HistorySheet
+          open={historyPullout.open}
+          slug={artifact.slug}
+          revisionId={historyPullout.revisionId}
+          onOpenChange={setHistoryOpen}
+          onRestored={() => {
+            void router.invalidate({ sync: true });
+          }}
+        />
+      )}
+
       <ShareLinkDialog
         open={shareUrl !== null}
         onOpenChange={(open) => {
@@ -218,8 +254,9 @@ function ArtifactPage() {
         <AlertDialogContent>
           <AlertDialogTitle>Remove this artifact?</AlertDialogTitle>
           <AlertDialogDescription>
-            “{artifact.title}” will be deleted from the wiki. This cannot be
-            undone.
+            {artifact.following
+              ? `“${artifact.title}” will leave your library. The shared original is unchanged.`
+              : `“${artifact.title}” will be deleted from the wiki. This cannot be undone.`}
           </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

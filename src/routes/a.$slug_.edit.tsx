@@ -4,6 +4,7 @@ import {
   EditorForm,
   type EditorValues,
 } from "@/components/artifact/editor-form";
+import { FollowNote } from "@/components/artifact/follow-note";
 import { AppShell } from "@/components/layout/app-shell";
 import { requireSession } from "@/lib/auth/protect";
 import { getArtifact, getLibrary, updateArtifactFn } from "@/lib/reliquary/functions";
@@ -49,7 +50,11 @@ function EditPage() {
           },
         },
       });
-      toast.success("Saved");
+      toast.success(
+        artifact.following && !updated.following
+          ? "Saved as your own copy — no longer following"
+          : "Saved",
+      );
       await router.invalidate({ sync: true });
       await router.navigate({
         to: "/a/$slug",
@@ -68,6 +73,7 @@ function EditPage() {
             Editing
           </p>
           <h1 className="font-serif text-2xl tracking-tight">{artifact.title}</h1>
+          <FollowNote artifact={artifact} editHint />
         </div>
         <EditorForm
           collections={library.collections}
