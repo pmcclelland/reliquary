@@ -4,6 +4,7 @@ import {
   canRestoreRevision,
   historyTarget,
   pickSelectedRevisionId,
+  revisionOrdinal,
   snapshotsToAppend,
 } from "./revisions.ts";
 import type { FollowContent } from "./save.ts";
@@ -103,6 +104,14 @@ describe("canRestoreRevision", () => {
   it("allows restore only on owned history", () => {
     assert.equal(canRestoreRevision(false), true);
     assert.equal(canRestoreRevision(true), false);
+  });
+});
+
+describe("revisionOrdinal", () => {
+  it("numbers oldest as #1 on a newest-first list", () => {
+    assert.equal(revisionOrdinal(3, 0), 3);
+    assert.equal(revisionOrdinal(3, 1), 2);
+    assert.equal(revisionOrdinal(3, 2), 1);
   });
 });
 

@@ -22,8 +22,9 @@ import {
   getLibrary,
   restoreRevisionFn,
 } from "@/lib/reliquary/functions";
+import { revisionOrdinal } from "@/lib/reliquary/revisions";
 import type { ArtifactRevisionSummary } from "@/lib/reliquary/types";
-import { cn, formatBytes, formatRelative, formatStamp } from "@/lib/utils";
+import { cn, formatBytes, formatRelative } from "@/lib/utils";
 
 export const Route = createFileRoute("/a/$slug_/history")({
   validateSearch: z.object({
@@ -102,15 +103,22 @@ function HistoryPage() {
                   slug={slug}
                   selected={row.id === selected.id}
                   tip={index === 0}
+                  ordinal={revisionOrdinal(revisions.length, index)}
                 />
               ))}
             </ol>
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm text-fg">{selected.title}</p>
+                  <p className="truncate font-serif text-sm tracking-tight">
+                    {formatRelative(selected.createdAt)}
+                  </p>
                   <p className="text-xs text-subtle tabular-nums">
-                    {formatStamp(selected.createdAt)} ·{" "}
+                    #{revisionOrdinal(
+                      revisions.length,
+                      revisions.findIndex((row) => row.id === selected.id),
+                    )}{" "}
+                    · {formatHistoryWhen(selected.createdAt)} ·{" "}
                     {formatBytes(selected.htmlBytes)}
                   </p>
                 </div>
@@ -173,16 +181,32 @@ function HistoryPage() {
   );
 }
 
+function formatHistoryWhen(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const now = new Date();
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: sameYear ? undefined : "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function RevisionRow({
   row,
   slug,
   selected,
   tip,
+  ordinal,
 }: {
   row: ArtifactRevisionSummary;
   slug: string;
   selected: boolean;
   tip: boolean;
+  ordinal: number;
 }) {
   return (
     <li>
@@ -192,16 +216,24 @@ function RevisionRow({
         search={{ rev: row.id }}
         className={cn(
           "block px-4 py-3",
-          selected ? "bg-surface-muted text-fg" : "text-muted hover:bg-surface-muted/70 hover:text-fg",
+          selected
+            ? "bg-surface-muted text-fg"
+            : "text-muted hover:bg-surface-muted/70 hover:text-fg",
         )}
         aria-current={selected ? "true" : undefined}
       >
-        <span className="flex items-center gap-2">
-          <span className="min-w-0 truncate text-sm">{row.title}</span>
+        <span className="flex items-baseline gap-2">
+          <span className="shrink-0 font-serif text-xs tabular-nums text-subtle">
+            #{ordinal}
+          </span>
+          <span className="min-w-0 flex-1 font-serif text-sm tracking-tight">
+            {formatRelative(row.createdAt)}
+          </span>
           {tip ? <Badge className="shrink-0">Latest</Badge> : null}
         </span>
-        <span className="mt-1 block text-xs text-subtle tabular-nums">
-          {formatRelative(row.createdAt)} · {formatBytes(row.htmlBytes)}
+        <span className="mt-1 block truncate text-xs text-subtle tabular-nums">
+          {formatHistoryWhen(row.createdAt)}
+          {row.title ? ` · ${row.title}` : ""}
         </span>
       </Link>
     </li>

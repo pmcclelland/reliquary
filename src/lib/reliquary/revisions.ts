@@ -45,3 +45,11 @@ export function pickSelectedRevisionId(
   if (requested && ids.includes(requested)) return requested;
   return ids[0] ?? null;
 }
+
+/** Oldest write is #1. List is newest-first, so index 0 → total. */
+export function revisionOrdinal(
+  total: number,
+  newestFirstIndex: number,
+): number {
+  return total - newestFirstIndex;
+}
