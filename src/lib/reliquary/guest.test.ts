@@ -50,4 +50,12 @@ describe("guest library", () => {
     }
     assert.ok(getGuestArtifacts()[0]?.html.startsWith("<!DOCTYPE html>"));
   });
+
+  it("does not mark sample relics as follows", () => {
+    for (const art of getGuestLibrary().artifacts) {
+      assert.equal(art.following, false);
+      assert.equal(art.followLive, false);
+      assert.equal(art.sourceArtifactId, null);
+    }
+  });
 });

@@ -29,7 +29,7 @@ export const Route = createFileRoute("/s/$slug")({
 });
 
 function SharePage() {
-  const { artifact, inLibrarySlug, signedIn } = Route.useLoaderData();
+  const { artifact, inLibrarySlug, signedIn, following } = Route.useLoaderData();
   const { slug } = Route.useParams();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
@@ -61,6 +61,7 @@ function SharePage() {
           sharePath={`/s/${slug}`}
           inLibrarySlug={inLibrarySlug}
           signedIn={signedIn}
+          following={following}
         />
         <Button
           type="button"

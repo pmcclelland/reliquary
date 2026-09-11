@@ -13,6 +13,12 @@ export type ArtifactSummary = {
   hasExplainer: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Set when this row was saved from another relic and still follows it. */
+  sourceArtifactId: string | null;
+  /** True while `sourceArtifactId` is set — the row is a live follow. */
+  following: boolean;
+  /** True when this read resolved title/HTML/etc. from the live source. */
+  followLive: boolean;
 };
 
 export type Artifact = ArtifactSummary & {
@@ -55,6 +61,8 @@ export type ShareView = {
   artifact: Artifact;
   inLibrarySlug: string | null;
   signedIn: boolean;
+  /** The library row is a follow (not the original or a seed snapshot). */
+  following: boolean;
 };
 
 export type SaveToLibraryResult = {

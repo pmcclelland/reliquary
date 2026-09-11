@@ -40,6 +40,9 @@ export function getGuestArtifacts(): Artifact[] {
       hasExplainer: false,
       createdAt: GUEST_AT,
       updatedAt: GUEST_AT,
+      sourceArtifactId: null,
+      following: false,
+      followLive: false,
       html: art.html,
       explainerHtml: "",
     };

@@ -15,7 +15,16 @@ import type {
   CollectionInput,
   Library,
 } from "./types";
-import { artifactCopyInput, libraryCopyLookupIds } from "./save";
+import {
+  artifactCopyInput,
+  canonicalFollowSourceId,
+  followMeta,
+  libraryCopyLookupIds,
+  resolveFollowedArtifact,
+  shouldDetachFollow,
+  type FollowContent,
+  type FollowSourceFields,
+} from "./save";
 import { ensureDocument } from "./wrap";
 
 type ArtifactRow = {
@@ -98,6 +107,7 @@ function mapSummary(row: ArtifactRow): ArtifactSummary {
       row.has_explainer === true || Boolean(row.explainer_html?.trim()),
     createdAt: iso(row.created_at),
     updatedAt: iso(row.updated_at),
+    ...followMeta(row.source_artifact_id ?? null),
   };
 }
 
@@ -128,6 +138,85 @@ function mapCollection(row: CollectionRow): Collection {
     updatedAt: iso(row.updated_at),
     count: Number(row.count ?? 0),
   };
+}
+
+function mapFollowSource(row: ArtifactRow): FollowSourceFields {
+  const explainerHtml = row.explainer_html ?? "";
+  return {
+    title: row.title,
+    description: row.description,
+    html: row.html ?? "",
+    explainerHtml,
+    tags: parseTags(row.tags),
+    kind: row.kind === "react" ? "react" : "html",
+    hasExplainer:
+      row.has_explainer === true || Boolean(explainerHtml.trim()),
+    updatedAt: iso(row.updated_at),
+  };
+}
+
+function guestFollowSource(id: string): FollowSourceFields | null {
+  const guest = getGuestArtifact(id);
+  if (!guest || guest.id !== id) return null;
+  return {
+    title: guest.title,
+    description: guest.description,
+    html: guest.html,
+    explainerHtml: guest.explainerHtml,
+    tags: [...guest.tags],
+    kind: guest.kind,
+    hasExplainer: guest.hasExplainer,
+    updatedAt: guest.updatedAt,
+  };
+}
+
+async function loadSourcesByIds(
+  ids: string[],
+): Promise<Map<string, FollowSourceFields>> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  const found = new Map<string, FollowSourceFields>();
+  if (unique.length === 0) return found;
+  const sql = await getSql();
+  for (const id of unique) {
+    const rows = await sql<ArtifactRow>`
+      select id, title, description, html, explainer_html, tags, kind, updated_at
+      from artifacts
+      where id = ${id}
+      limit 1
+    `;
+    if (rows[0]) {
+      found.set(id, mapFollowSource(rows[0]));
+      continue;
+    }
+    const guest = guestFollowSource(id);
+    if (guest) found.set(id, guest);
+  }
+  return found;
+}
+
+function hydrateFromSources<T extends ArtifactSummary>(
+  items: T[],
+  sources: Map<string, FollowSourceFields>,
+): T[] {
+  return items.map((item) =>
+    resolveFollowedArtifact(
+      item,
+      item.sourceArtifactId
+        ? (sources.get(item.sourceArtifactId) ?? null)
+        : null,
+    ),
+  );
+}
+
+async function hydrateArtifacts<T extends ArtifactSummary>(
+  items: T[],
+): Promise<T[]> {
+  const ids = items
+    .filter((item) => item.following && item.sourceArtifactId)
+    .map((item) => item.sourceArtifactId as string);
+  if (ids.length === 0) return items.map((item) => ({ ...item, followLive: false }));
+  const sources = await loadSourcesByIds(ids);
+  return hydrateFromSources(items, sources);
 }
 
 const seedByUser = new Map<string, Promise<void>>();
@@ -262,14 +351,15 @@ export async function listArtifacts(
   const rows = await sql<ArtifactRow>`
     select a.id, a.slug, a.title, a.description, a.collection_id, a.tags, a.kind,
       (a.explainer_html <> '') as has_explainer,
-      a.created_at, a.updated_at,
+      a.created_at, a.updated_at, a.source_artifact_id,
       c.slug as collection_slug, c.title as collection_title
     from artifacts a
     left join collections c on c.id = a.collection_id
     where a.user_id = ${userId}
     order by a.updated_at desc
   `;
-  let items = rows.map(mapSummary);
+  let items = await hydrateArtifacts(rows.map(mapSummary));
+  items.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   if (opts?.collection) {
     const key = opts.collection;
     items = items.filter(
@@ -309,7 +399,7 @@ export async function getArtifact(
   const sql = await getSql();
   const rows = await sql<ArtifactRow>`
     select a.id, a.slug, a.title, a.description, a.html, a.explainer_html,
-      a.collection_id, a.tags, a.kind,
+      a.collection_id, a.tags, a.kind, a.source_artifact_id,
       a.created_at, a.updated_at,
       c.slug as collection_slug, c.title as collection_title
     from artifacts a
@@ -319,7 +409,8 @@ export async function getArtifact(
     limit 1
   `;
   if (rows.length === 0) notFound("Artifact");
-  return mapArtifact(rows[0]!);
+  const [artifact] = await hydrateArtifacts([mapArtifact(rows[0]!)]);
+  return artifact!;
 }
 
 type PublicArtifactRecord = {
@@ -331,7 +422,7 @@ async function loadPublicRecord(idOrSlug: string): Promise<PublicArtifactRecord>
   const sql = await getSql();
   const rows = await sql<ArtifactRow>`
     select a.id, a.user_id, a.slug, a.title, a.description, a.html, a.explainer_html,
-      a.collection_id, a.tags, a.kind,
+      a.collection_id, a.tags, a.kind, a.source_artifact_id,
       a.created_at, a.updated_at,
       c.slug as collection_slug, c.title as collection_title
     from artifacts a
@@ -346,7 +437,8 @@ async function loadPublicRecord(idOrSlug: string): Promise<PublicArtifactRecord>
     notFound("Artifact");
   }
   const row = rows[0]!;
-  return { artifact: mapArtifact(row), ownerUserId: row.user_id ?? null };
+  const [artifact] = await hydrateArtifacts([mapArtifact(row)]);
+  return { artifact: artifact!, ownerUserId: row.user_id ?? null };
 }
 
 export async function getPublicArtifact(idOrSlug: string): Promise<Artifact> {
@@ -365,7 +457,7 @@ export async function findLibraryCopy(
   const sql = await getSql();
   const rows = await sql<ArtifactRow>`
     select a.id, a.slug, a.title, a.description, a.html, a.explainer_html,
-      a.collection_id, a.tags, a.kind,
+      a.collection_id, a.tags, a.kind, a.source_artifact_id,
       a.created_at, a.updated_at,
       c.slug as collection_slug, c.title as collection_title
     from artifacts a
@@ -380,7 +472,8 @@ export async function findLibraryCopy(
     limit 1
   `;
   if (rows.length === 0) return null;
-  return mapArtifact(rows[0]!);
+  const [artifact] = await hydrateArtifacts([mapArtifact(rows[0]!)]);
+  return artifact!;
 }
 
 export async function getShareView(
@@ -390,6 +483,7 @@ export async function getShareView(
   artifact: Artifact;
   inLibrarySlug: string | null;
   signedIn: boolean;
+  following: boolean;
 }> {
   const record = await loadPublicRecord(idOrSlug);
   if (!userId) {
@@ -397,16 +491,26 @@ export async function getShareView(
       artifact: record.artifact,
       inLibrarySlug: null,
       signedIn: false,
+      following: false,
+    };
+  }
+  if (record.ownerUserId === userId) {
+    return {
+      artifact: record.artifact,
+      inLibrarySlug: record.artifact.slug,
+      signedIn: true,
+      following: record.artifact.following,
     };
   }
   const copy = await findLibraryCopy(userId, {
-    id: record.artifact.id,
-    ownerUserId: record.ownerUserId,
+    id: canonicalFollowSourceId(record.artifact),
+    ownerUserId: null,
   });
   return {
     artifact: record.artifact,
     inLibrarySlug: copy?.slug ?? null,
     signedIn: true,
+    following: Boolean(copy?.following),
   };
 }
 
@@ -415,22 +519,26 @@ export async function saveSharedArtifact(
   idOrSlug: string,
 ): Promise<{ artifact: Artifact; created: boolean }> {
   const record = await loadPublicRecord(idOrSlug);
+  if (record.ownerUserId === userId) {
+    return { artifact: record.artifact, created: false };
+  }
+  const sourceId = canonicalFollowSourceId(record.artifact);
   const existing = await findLibraryCopy(userId, {
-    id: record.artifact.id,
-    ownerUserId: record.ownerUserId,
+    id: sourceId,
+    ownerUserId: null,
   });
   if (existing) return { artifact: existing, created: false };
 
   try {
     const artifact = await createArtifact(userId, {
       ...artifactCopyInput(record.artifact),
-      sourceArtifactId: record.artifact.id,
+      sourceArtifactId: sourceId,
     });
     return { artifact, created: true };
   } catch (err) {
     const raced = await findLibraryCopy(userId, {
-      id: record.artifact.id,
-      ownerUserId: record.ownerUserId,
+      id: sourceId,
+      ownerUserId: null,
     });
     if (raced) return { artifact: raced, created: false };
     throw err;
@@ -525,7 +633,36 @@ export async function updateArtifact(
       ? prepareExplainer(patch.explainer)
       : current.explainerHtml;
   const kind = inferKind(html);
+  const nextContent: FollowContent = {
+    title,
+    html,
+    description,
+    explainerHtml,
+    tags,
+  };
+  const currentContent: FollowContent = {
+    title: current.title,
+    html: current.html,
+    description: current.description,
+    explainerHtml: current.explainerHtml,
+    tags: current.tags,
+  };
+  const detach = shouldDetachFollow(
+    current.following,
+    currentContent,
+    nextContent,
+  );
   const sql = await getSql();
+  if (current.following && !detach) {
+    await sql`
+      update artifacts set
+        slug = ${slug},
+        collection_id = ${collectionId},
+        updated_at = now()
+      where id = ${current.id} and user_id = ${userId}
+    `;
+    return getArtifact(userId, current.id);
+  }
   await sql`
     update artifacts set
       slug = ${slug},
@@ -536,6 +673,7 @@ export async function updateArtifact(
       collection_id = ${collectionId},
       tags = ${JSON.stringify(tags)},
       kind = ${kind},
+      source_artifact_id = ${detach ? null : current.sourceArtifactId},
       updated_at = now()
     where id = ${current.id} and user_id = ${userId}
   `;

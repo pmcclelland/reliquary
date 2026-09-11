@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArtifactFrame } from "@/components/artifact/frame";
+import { FollowNote } from "@/components/artifact/follow-note";
 import { SourceView } from "@/components/artifact/source-view";
 import { ShareLinkDialog } from "@/components/artifact/share-dialog";
 import { AppShell } from "@/components/layout/app-shell";
@@ -115,6 +116,7 @@ function ArtifactPage() {
                 {artifact.description}
               </p>
             ) : null}
+            <FollowNote artifact={artifact} />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge>{artifact.kind === "react" ? "React" : "HTML"}</Badge>
               {artifact.tags.map((tag) => (
@@ -218,8 +220,9 @@ function ArtifactPage() {
         <AlertDialogContent>
           <AlertDialogTitle>Remove this artifact?</AlertDialogTitle>
           <AlertDialogDescription>
-            “{artifact.title}” will be deleted from the wiki. This cannot be
-            undone.
+            {artifact.following
+              ? `“${artifact.title}” will leave your library. The shared original is unchanged.`
+              : `“${artifact.title}” will be deleted from the wiki. This cannot be undone.`}
           </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

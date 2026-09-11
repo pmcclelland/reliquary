@@ -10,11 +10,13 @@ export function SaveToLibraryButton({
   sharePath,
   inLibrarySlug,
   signedIn,
+  following = false,
 }: {
   sourceKey: string;
   sharePath: string;
   inLibrarySlug: string | null;
   signedIn: boolean;
+  following?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -31,7 +33,9 @@ export function SaveToLibraryButton({
       const result = await saveToLibraryFn({ data: { slug: sourceKey } });
       setSavedSlug(result.artifact.slug);
       toast.success(
-        result.created ? "Saved to your library" : "Already in your library",
+        result.created
+          ? "Saved — it will update with the original"
+          : "Already in your library",
       );
       await router.invalidate();
     } catch (err) {
@@ -48,7 +52,11 @@ export function SaveToLibraryButton({
   if (action.kind === "in-library") {
     return (
       <Button asChild size="sm" variant="secondary" className="shrink-0">
-        <Link to="/a/$slug" params={{ slug: action.slug }}>
+        <Link
+          to="/a/$slug"
+          params={{ slug: action.slug }}
+          title={following ? "Updates with the original" : undefined}
+        >
           In library
         </Link>
       </Button>
