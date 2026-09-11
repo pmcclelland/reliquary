@@ -110,7 +110,10 @@ export function EditorForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col md:min-h-0 md:flex-1"
+    >
       <div className="grid gap-3 border-b border-border px-4 py-4 md:grid-cols-2">
         <Field label="Title" htmlFor="title">
           <Input
@@ -208,7 +211,7 @@ export function EditorForm({
 
       <div
         className={cn(
-          "grid min-h-0 flex-1",
+          "grid min-h-80 flex-1 overflow-hidden md:min-h-0",
           tab === "split" ? "md:grid-cols-2" : "grid-cols-1",
         )}
       >
@@ -247,7 +250,7 @@ export function EditorForm({
         )}
       </div>
 
-      <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
