@@ -33,6 +33,15 @@ Relics are one self-contained `.html` document.
 - Title: short, wiki-like. Description: one sentence. Tags: a few lowercase words.
 - Do not put secrets, tokens, or private env in the HTML.
 
+### Layout (reports, briefs, docs)
+
+Reliquary shows relics in a share iframe and an edit split pane — widths change. Prefer a **single content column** that adapts.
+
+- Put mastheads, titles, sticky bars, and body copy in the **same** max-width wrapper (e.g. one `.wrap` with side padding). Do **not** make headers or section bands full-bleed while the body stays inset — at narrow widths the bar hits the screen edge and looks misaligned.
+- Sticky headers are fine; keep them inside that column so background and text share the same inset.
+- Full-bleed is OK only when the piece is intentionally edge-to-edge (canvas, Three.js stage, immersive study) — not for text reports, briefs, or architecture writeups.
+- Avoid a hard `min-width` on wide diagrams that forces sideways scroll just to read the title; put `overflow: auto` on the diagram board alone.
+
 ## Explainer (only when asked)
 
 Do **not** write an explainer for a plain “file this as a relic” / `/create-relic`. Add one only if they ask to explain it, include notes, or say how it works.
