@@ -73,3 +73,7 @@ Reply with both URLs:
 
 - Wiki: `https://reliquary.pmcclel.land/a/{slug}`
 - Live: `https://reliquary.pmcclel.land/s/{slug}`
+
+Live is the public share view. Recipients can Save to library and follow the original. A share link does not grant edit.
+
+MCP stays in the token owner’s library. On a followed relic, `update_artifact` keeps collection and slug local. Allowlisted collaborators write the shared original; other content edits fork.

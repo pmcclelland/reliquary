@@ -292,9 +292,21 @@ DELETE /api/collections/:id`}</Pre>
         <p className="mt-2 text-sm text-muted">
           Every artifact has a live view — a thin Reliquary bar over the
           piece at full size. The wiki page stays at{" "}
-          <code className="font-mono text-xs">/a/:slug</code>. The owner can
-          allow specific Reliquary accounts to edit the original. A share
-          link or a saved copy does not grant write.
+          <code className="font-mono text-xs">/a/:slug</code>. From the share
+          view, Save to library files an owned follow in your shelves
+          (sign-in first if needed). Content then resolves from the original
+          tip; a content edit you cannot write on the source forks.
+        </p>
+        <p className="mt-3 text-sm text-muted">
+          History is More → History on the wiki page — an on-demand sheet,
+          not a REST resource. Restore is owner-only. The owner can allow
+          specific Reliquary accounts to edit the original (Share →
+          Collaborators). A share link or a saved copy does not grant write.
+          {" "}
+          <code className="font-mono text-xs">PUT</code> and{" "}
+          <code className="font-mono text-xs">PATCH</code> use the same
+          rule: allowlisted collaborators write the tip; everyone else
+          forks.
         </p>
         <Pre>{`${origin || ""}/s/:slug`}</Pre>
 
