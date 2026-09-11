@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   EditorForm,
@@ -74,15 +74,6 @@ function EditPage() {
           </p>
           <h1 className="font-serif text-2xl tracking-tight">{artifact.title}</h1>
           <FollowNote artifact={artifact} editHint />
-          <p className="mt-2 text-xs">
-            <Link
-              to="/a/$slug/history"
-              params={{ slug: artifact.slug }}
-              className="text-subtle hover:text-muted"
-            >
-              History
-            </Link>
-          </p>
         </div>
         <EditorForm
           collections={library.collections}

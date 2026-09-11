@@ -53,3 +53,17 @@ export function revisionOrdinal(
 ): number {
   return total - newestFirstIndex;
 }
+
+/** `/a/:slug?history=` — `open` / `1` / `true` open the tip; any other value is a revision id. */
+export function parseHistorySearch(raw: string | undefined | null): {
+  open: boolean;
+  revisionId?: string;
+} {
+  if (!raw) return { open: false };
+  const value = raw.trim();
+  if (!value) return { open: false };
+  if (value === "open" || value === "1" || value === "true") {
+    return { open: true };
+  }
+  return { open: true, revisionId: value };
+}

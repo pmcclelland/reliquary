@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   canRestoreRevision,
   historyTarget,
+  parseHistorySearch,
   pickSelectedRevisionId,
   revisionOrdinal,
   snapshotsToAppend,
@@ -112,6 +113,21 @@ describe("revisionOrdinal", () => {
     assert.equal(revisionOrdinal(3, 0), 3);
     assert.equal(revisionOrdinal(3, 1), 2);
     assert.equal(revisionOrdinal(3, 2), 1);
+  });
+});
+
+describe("parseHistorySearch", () => {
+  it("treats open flags as a pullout with no pinned revision", () => {
+    assert.deepEqual(parseHistorySearch("open"), { open: true });
+    assert.deepEqual(parseHistorySearch("1"), { open: true });
+    assert.deepEqual(parseHistorySearch(undefined), { open: false });
+  });
+
+  it("treats any other value as a revision id", () => {
+    assert.deepEqual(parseHistorySearch("rev-old"), {
+      open: true,
+      revisionId: "rev-old",
+    });
   });
 });
 
