@@ -175,7 +175,7 @@ export function HistorySheet({
                   ) : null}
                 </div>
               </div>
-              <div className="min-h-40 flex-1 overflow-hidden bg-chip">
+              <div className="min-h-40 min-w-0 flex-1 overflow-hidden bg-chip">
                 {source ? (
                   <SourceView
                     html={selected.html}

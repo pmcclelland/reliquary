@@ -211,7 +211,7 @@ export function EditorForm({
 
       <div
         className={cn(
-          "grid min-h-80 flex-1 overflow-hidden md:min-h-0",
+          "grid min-h-80 min-w-0 flex-1 overflow-hidden md:min-h-0",
           tab === "split" ? "md:grid-cols-2" : "grid-cols-1",
         )}
       >
@@ -233,12 +233,12 @@ export function EditorForm({
               }
             }}
             spellCheck={false}
-            className="min-h-80 flex-1 resize-none rounded-none border-0 font-mono text-[13px] leading-relaxed shadow-none md:min-h-0"
+            className="min-h-80 min-w-0 flex-1 resize-none rounded-none border-0 font-mono text-[13px] leading-relaxed shadow-none md:min-h-0"
             placeholder="Paste a self-contained HTML document, a fragment, or a React module that defines App."
           />
         )}
         {(tab === "split" || tab === "preview") && (
-          <div className="min-h-80 border-t border-border bg-chip md:min-h-0 md:border-t-0 md:border-l">
+          <div className="min-h-80 min-w-0 border-t border-border bg-chip md:min-h-0 md:border-t-0 md:border-l">
             {previewHtml.trim() ? (
               <ArtifactFrame html={previewHtml} title={title || "Preview"} />
             ) : (
