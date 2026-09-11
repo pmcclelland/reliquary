@@ -20,14 +20,14 @@ export type EditorValues = {
 export function EditorForm({
   collections,
   initial,
-  submitLabel,
+  submitLabel = "Upload",
   busy,
   onSubmit,
   onCancel,
 }: {
   collections: Collection[];
   initial?: Partial<Artifact>;
-  submitLabel: string;
+  submitLabel?: string;
   busy?: boolean;
   onSubmit: (values: EditorValues) => Promise<void> | void;
   onCancel: () => void;
@@ -110,8 +110,11 @@ export function EditorForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-      <div className="grid gap-3 border-b border-border px-4 py-4 md:grid-cols-2 lg:grid-cols-3">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col md:min-h-0 md:flex-1"
+    >
+      <div className="grid gap-3 border-b border-border px-4 py-4 md:grid-cols-2">
         <Field label="Title" htmlFor="title">
           <Input
             id="title"
@@ -184,7 +187,7 @@ export function EditorForm({
             variant="secondary"
             onClick={() => fileRef.current?.click()}
           >
-            Upload .html
+            Choose .html
           </Button>
           <p className="text-xs text-subtle tabular-nums">{formatBytes(bytes)}</p>
         </div>
@@ -204,19 +207,11 @@ export function EditorForm({
             {id}
           </button>
         ))}
-        <div className="ml-auto flex gap-2">
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={busy || !title.trim() || !html.trim()}>
-            {submitLabel}
-          </Button>
-        </div>
       </div>
 
       <div
         className={cn(
-          "grid min-h-0 flex-1",
+          "grid min-h-80 flex-1 overflow-hidden md:min-h-0",
           tab === "split" ? "md:grid-cols-2" : "grid-cols-1",
         )}
       >
@@ -253,6 +248,15 @@ export function EditorForm({
             )}
           </div>
         )}
+      </div>
+
+      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3">
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={busy || !title.trim() || !html.trim()}>
+          {submitLabel}
+        </Button>
       </div>
     </form>
   );
