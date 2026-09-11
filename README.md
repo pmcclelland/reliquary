@@ -39,7 +39,7 @@ Every relic has a public live view at `/s/:slug` — a thin Reliquary bar over t
 
 A content edit you are not allowed to write on the original becomes your own copy and stops following. Changing only the shelf or slug does not.
 
-**History** lives on the source, append-only. More → History opens a sheet (it is not always on the page). Restore is owner-only: it writes that snapshot as a new tip. Followers, including collaborators, can browse the same list. `/a/:slug/history` opens the sheet (`?history=open`).
+**History** lives on the source, append-only. More → History opens a wide sheet (it is not always on the page): revision list beside the preview on large screens, stacked on a phone. Restore is owner-only: it writes that snapshot as a new tip. Followers, including collaborators, can browse the same list. `/a/:slug/history` opens the sheet (`?history=open`).
 
 **Collaborators** are an owner allowlist, not a property of the link. Share → Collaborators: turn Editing on, then add someone by their Reliquary email. They write the live tip; revisions are attributed to them. A share link or Save to library never grants edit. Listed people cannot write while Editing is off.
 

@@ -109,7 +109,7 @@ export function HistorySheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent aria-describedby={undefined}>
+      <SheetContent aria-describedby={undefined} size="wide">
         <div className="border-b border-border px-4 py-4 pr-12">
           <SheetTitle>History</SheetTitle>
           <SheetDescription>
@@ -126,8 +126,8 @@ export function HistorySheet({
             No revisions yet. History starts when this relic is first saved.
           </p>
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <ol className="max-h-44 shrink-0 overflow-y-auto border-b border-border">
+          <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+            <ol className="max-h-44 shrink-0 overflow-y-auto border-b border-border sm:max-h-none sm:min-h-0 sm:w-72 sm:border-r sm:border-b-0">
               {revisions.map((row, index) => (
                 <RevisionRow
                   key={row.id}
@@ -139,7 +139,7 @@ export function HistorySheet({
                 />
               ))}
             </ol>
-            <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate font-serif text-sm tracking-tight">
