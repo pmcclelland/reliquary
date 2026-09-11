@@ -64,7 +64,7 @@ function NewPage() {
         </div>
         <EditorForm
           collections={library.collections}
-          submitLabel="Publish"
+          submitLabel="Upload"
           onSubmit={onSubmit}
           onCancel={() => void router.navigate({ to: "/" })}
         />

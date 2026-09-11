@@ -20,14 +20,14 @@ export type EditorValues = {
 export function EditorForm({
   collections,
   initial,
-  submitLabel,
+  submitLabel = "Upload",
   busy,
   onSubmit,
   onCancel,
 }: {
   collections: Collection[];
   initial?: Partial<Artifact>;
-  submitLabel: string;
+  submitLabel?: string;
   busy?: boolean;
   onSubmit: (values: EditorValues) => Promise<void> | void;
   onCancel: () => void;
@@ -111,7 +111,7 @@ export function EditorForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-      <div className="grid gap-3 border-b border-border px-4 py-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 border-b border-border px-4 py-4 md:grid-cols-2">
         <Field label="Title" htmlFor="title">
           <Input
             id="title"
@@ -204,14 +204,6 @@ export function EditorForm({
             {id}
           </button>
         ))}
-        <div className="ml-auto flex gap-2">
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={busy || !title.trim() || !html.trim()}>
-            {submitLabel}
-          </Button>
-        </div>
       </div>
 
       <div
@@ -253,6 +245,15 @@ export function EditorForm({
             )}
           </div>
         )}
+      </div>
+
+      <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={busy || !title.trim() || !html.trim()}>
+          {submitLabel}
+        </Button>
       </div>
     </form>
   );

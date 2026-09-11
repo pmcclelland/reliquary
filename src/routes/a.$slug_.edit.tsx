@@ -72,7 +72,7 @@ function EditPage() {
         <EditorForm
           collections={library.collections}
           initial={artifact}
-          submitLabel="Save"
+          submitLabel="Upload"
           onSubmit={onSubmit}
           onCancel={() =>
             void router.navigate({
