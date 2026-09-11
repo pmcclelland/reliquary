@@ -31,6 +31,10 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
 
+  /* History (and other roomy pullouts): ~full viewport, cap so ultrawide
+     still shows a sliver of the page. Default sheet stays max-w-md. */
+  --max-width-sheet-wide: min(96vw, 100rem);
+
   --shadow-border:
     0px 0px 0px 1px rgba(26, 23, 20, 0.06),
     0px 1px 2px -1px rgba(26, 23, 20, 0.06),

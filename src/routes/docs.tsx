@@ -298,8 +298,9 @@ DELETE /api/collections/:id`}</Pre>
           tip; a content edit you cannot write on the source forks.
         </p>
         <p className="mt-3 text-sm text-muted">
-          History is More → History on the wiki page — an on-demand sheet,
-          not a REST resource. Restore is owner-only. The owner can allow
+          History is More → History on the wiki page — an on-demand wide
+          sheet (list beside preview on large screens), not a REST
+          resource. Restore is owner-only. The owner can allow
           specific Reliquary accounts to edit the original (Share →
           Collaborators). A share link or a saved copy does not grant write.
           {" "}

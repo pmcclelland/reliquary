@@ -9,8 +9,12 @@ export const SheetClose = DialogPrimitive.Close;
 export function SheetContent({
   className,
   children,
+  size = "default",
   ...props
-}: ComponentProps<typeof DialogPrimitive.Content>) {
+}: ComponentProps<typeof DialogPrimitive.Content> & {
+  /** default: 28rem right sheet. wide: 96vw, capped at 100rem. */
+  size?: "default" | "wide";
+}) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-scrim" />
@@ -18,7 +22,8 @@ export function SheetContent({
         className={cn(
           "fixed z-40 flex flex-col bg-surface shadow-border focus:outline-none",
           "inset-x-0 bottom-0 h-[min(90dvh,44rem)] rounded-t-xl",
-          "sm:inset-y-0 sm:right-0 sm:left-auto sm:h-full sm:w-full sm:max-w-md sm:rounded-none sm:border-l sm:border-border",
+          "sm:inset-y-0 sm:right-0 sm:left-auto sm:h-full sm:w-full sm:rounded-none sm:border-l sm:border-border",
+          size === "wide" ? "sm:max-w-sheet-wide" : "sm:max-w-md",
           className,
         )}
         {...props}
