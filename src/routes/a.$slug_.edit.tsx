@@ -51,9 +51,11 @@ function EditPage() {
         },
       });
       toast.success(
-        artifact.following && !updated.following
-          ? "Saved as your own copy — no longer following"
-          : "Saved",
+        artifact.following && artifact.canEditSource
+          ? "Saved to the shared original"
+          : artifact.following && !updated.following
+            ? "Saved as your own copy — no longer following"
+            : "Saved",
       );
       await router.invalidate({ sync: true });
       await router.navigate({

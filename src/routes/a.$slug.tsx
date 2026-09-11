@@ -9,7 +9,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArtifactFrame } from "@/components/artifact/frame";
 import { FollowNote } from "@/components/artifact/follow-note";
@@ -35,7 +35,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { deleteArtifactFn, getArtifact, getLibrary } from "@/lib/reliquary/functions";
+import {
+  addArtifactCollaboratorFn,
+  deleteArtifactFn,
+  getArtifact,
+  getLibrary,
+  removeArtifactCollaboratorFn,
+  setCollaboratorsEnabledFn,
+} from "@/lib/reliquary/functions";
 import { parseHistorySearch } from "@/lib/reliquary/revisions";
 import type { Artifact, Library } from "@/lib/reliquary/types";
 import { artifactShareUrl, copyText, formatBytes, formatRelative } from "@/lib/utils";
@@ -65,6 +72,11 @@ function ArtifactPage() {
   const [source, setSource] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [collaboration, setCollaboration] = useState(artifact.collaboration);
+
+  useEffect(() => {
+    setCollaboration(artifact.collaboration);
+  }, [artifact.collaboration]);
   const bytes = new TextEncoder().encode(artifact.html).length;
 
   function setHistoryOpen(open: boolean) {
@@ -248,6 +260,40 @@ function ArtifactPage() {
         }}
         url={shareUrl ?? ""}
         title={artifact.title}
+        collaboration={library.guest ? null : collaboration}
+        onSetEnabled={
+          collaboration
+            ? async (enabled) => {
+                const next = await setCollaboratorsEnabledFn({
+                  data: { slug: artifact.slug, enabled },
+                });
+                setCollaboration(next.collaboration);
+                await router.invalidate({ sync: true });
+              }
+            : undefined
+        }
+        onAddCollaborator={
+          collaboration
+            ? async (email) => {
+                const next = await addArtifactCollaboratorFn({
+                  data: { slug: artifact.slug, email },
+                });
+                setCollaboration(next.collaboration);
+                await router.invalidate({ sync: true });
+              }
+            : undefined
+        }
+        onRemoveCollaborator={
+          collaboration
+            ? async (userId) => {
+                const next = await removeArtifactCollaboratorFn({
+                  data: { slug: artifact.slug, userId },
+                });
+                setCollaboration(next.collaboration);
+                await router.invalidate({ sync: true });
+              }
+            : undefined
+        }
       />
 
       <AlertDialog open={confirm} onOpenChange={setConfirm}>

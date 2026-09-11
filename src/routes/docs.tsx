@@ -292,7 +292,9 @@ DELETE /api/collections/:id`}</Pre>
         <p className="mt-2 text-sm text-muted">
           Every artifact has a live view — a thin Reliquary bar over the
           piece at full size. The wiki page stays at{" "}
-          <code className="font-mono text-xs">/a/:slug</code>.
+          <code className="font-mono text-xs">/a/:slug</code>. The owner can
+          allow specific Reliquary accounts to edit the original. A share
+          link or a saved copy does not grant write.
         </p>
         <Pre>{`${origin || ""}/s/:slug`}</Pre>
 

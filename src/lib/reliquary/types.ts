@@ -19,11 +19,30 @@ export type ArtifactSummary = {
   following: boolean;
   /** True when this read resolved title/HTML/etc. from the live source. */
   followLive: boolean;
+  /**
+   * True when this actor may write the live tip: they own this row, or they
+   * follow a source whose owner has enabled collaborators and allowlisted them.
+   */
+  canEditSource: boolean;
+};
+
+export type ArtifactCollaborator = {
+  userId: string;
+  email: string;
+  name: string;
+  createdAt: string;
+};
+
+export type ArtifactCollaboration = {
+  enabled: boolean;
+  people: ArtifactCollaborator[];
 };
 
 export type Artifact = ArtifactSummary & {
   html: string;
   explainerHtml: string;
+  /** Owner-only allowlist. Null for follows, guests, and public reads. */
+  collaboration: ArtifactCollaboration | null;
 };
 
 export type Collection = {
@@ -80,6 +99,8 @@ export type ArtifactRevisionSummary = {
   hasExplainer: boolean;
   htmlBytes: number;
   createdAt: string;
+  authorUserId: string;
+  authorLabel: string | null;
 };
 
 export type ArtifactRevision = ArtifactRevisionSummary & {

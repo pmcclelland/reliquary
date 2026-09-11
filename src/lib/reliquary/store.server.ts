@@ -7,6 +7,8 @@ import { SEED_ARTIFACTS, SEED_COLLECTIONS } from "./seed";
 import { slugify } from "./slug";
 import type {
   Artifact,
+  ArtifactCollaboration,
+  ArtifactCollaborator,
   ArtifactHistory,
   ArtifactInput,
   ArtifactKind,
@@ -25,7 +27,6 @@ import {
   followMeta,
   libraryCopyLookupIds,
   resolveFollowedArtifact,
-  shouldDetachFollow,
   type FollowContent,
   type FollowSourceFields,
 } from "./save";
@@ -35,6 +36,14 @@ import {
   pickSelectedRevisionId,
   snapshotsToAppend,
 } from "./revisions";
+import {
+  canWriteSourceTip,
+  collaboratorInviteMessage,
+  decideFollowContentWrite,
+  normalizeCollaboratorEmail,
+  resolveCollaboratorInvite,
+  revisionAuthorLabel,
+} from "./collaborators";
 import { ensureDocument } from "./wrap";
 
 type ArtifactRow = {
@@ -54,6 +63,7 @@ type ArtifactRow = {
   updated_at: unknown;
   user_id?: string;
   source_artifact_id?: string | null;
+  collaborators_enabled?: boolean;
 };
 
 type RevisionRow = {
@@ -68,6 +78,8 @@ type RevisionRow = {
   kind: string;
   html_bytes?: number;
   created_at: unknown;
+  author_name?: string | null;
+  author_email?: string | null;
 };
 
 type CollectionRow = {
@@ -80,6 +92,10 @@ type CollectionRow = {
   updated_at: unknown;
   count?: number;
 };
+
+function flag(value: unknown): boolean {
+  return value === true || value === 1 || value === "t" || value === "true";
+}
 
 function iso(value: unknown): string {
   if (value instanceof Date) return value.toISOString();
@@ -140,6 +156,7 @@ function mapArtifact(row: ArtifactRow): Artifact {
     ...mapSummary(row),
     html: row.html ?? "",
     explainerHtml: row.explainer_html ?? "",
+    collaboration: null,
   };
 }
 
@@ -246,6 +263,11 @@ function mapRevisionSummary(row: RevisionRow): ArtifactRevisionSummary {
     hasExplainer: Boolean(explainerHtml.trim()),
     htmlBytes,
     createdAt: iso(row.created_at),
+    authorUserId: row.user_id,
+    authorLabel: revisionAuthorLabel({
+      name: row.author_name,
+      email: row.author_email,
+    }),
   };
 }
 
@@ -289,11 +311,13 @@ async function listRevisionRows(
 ): Promise<ArtifactRevisionSummary[]> {
   const sql = await getSql();
   const rows = await sql<RevisionRow>`
-    select id, artifact_id, user_id, title, description, explainer_html, tags, kind,
-      octet_length(html) as html_bytes, created_at
-    from artifact_revisions
-    where artifact_id = ${artifactId}
-    order by created_at desc
+    select r.id, r.artifact_id, r.user_id, r.title, r.description, r.explainer_html,
+      r.tags, r.kind, octet_length(r.html) as html_bytes, r.created_at,
+      u.name as author_name, u.email as author_email
+    from artifact_revisions r
+    left join "user" u on u.id = r.user_id
+    where r.artifact_id = ${artifactId}
+    order by r.created_at desc
   `;
   return rows.map(mapRevisionSummary);
 }
@@ -304,25 +328,190 @@ async function loadRevision(
 ): Promise<ArtifactRevision | null> {
   const sql = await getSql();
   const rows = await sql<RevisionRow>`
-    select id, artifact_id, user_id, title, description, html, explainer_html,
-      tags, kind, created_at
-    from artifact_revisions
-    where artifact_id = ${artifactId} and id = ${revisionId}
+    select r.id, r.artifact_id, r.user_id, r.title, r.description, r.html,
+      r.explainer_html, r.tags, r.kind, r.created_at,
+      u.name as author_name, u.email as author_email
+    from artifact_revisions r
+    left join "user" u on u.id = r.user_id
+    where r.artifact_id = ${artifactId} and r.id = ${revisionId}
     limit 1
   `;
   if (rows.length === 0) return null;
   return mapRevision(rows[0]!);
 }
 
-async function hydrateArtifacts<T extends ArtifactSummary>(
+async function actorCanWriteSource(
+  userId: string,
+  sourceId: string,
+): Promise<boolean> {
+  const sql = await getSql();
+  const rows = await sql<{
+    user_id: string;
+    collaborators_enabled: boolean;
+    on_allowlist: boolean;
+  }>`
+    select a.user_id, a.collaborators_enabled,
+      exists(
+        select 1 from artifact_collaborators c
+        where c.artifact_id = a.id and c.user_id = ${userId}
+      ) as on_allowlist
+    from artifacts a
+    where a.id = ${sourceId}
+    limit 1
+  `;
+  const row = rows[0];
+  if (!row) return false;
+  return canWriteSourceTip({
+    actorIsSourceOwner: row.user_id === userId,
+    collaboratorsEnabled: flag(row.collaborators_enabled),
+    actorOnAllowlist: flag(row.on_allowlist),
+  });
+}
+
+async function hydrateCanEditSource<T extends ArtifactSummary>(
+  userId: string,
+  items: T[],
+): Promise<T[]> {
+  const followIds = [
+    ...new Set(
+      items
+        .filter((item) => item.following && item.sourceArtifactId)
+        .map((item) => item.sourceArtifactId as string),
+    ),
+  ];
+  const writable = new Set<string>();
+  for (const id of followIds) {
+    if (await actorCanWriteSource(userId, id)) writable.add(id);
+  }
+  return items.map((item) => ({
+    ...item,
+    canEditSource: item.following
+      ? Boolean(item.sourceArtifactId && writable.has(item.sourceArtifactId))
+      : true,
+  }));
+}
+
+function asPublicArtifact(artifact: Artifact): Artifact {
+  return { ...artifact, canEditSource: false, collaboration: null };
+}
+
+async function loadCollaborationPanel(
+  artifactId: string,
+): Promise<ArtifactCollaboration> {
+  const sql = await getSql();
+  const flags = await sql<{ collaborators_enabled: boolean }>`
+    select collaborators_enabled from artifacts where id = ${artifactId} limit 1
+  `;
+  const people = await sql<{
+    user_id: string;
+    created_at: unknown;
+    email: string | null;
+    name: string | null;
+  }>`
+    select c.user_id, c.created_at, u.email, u.name
+    from artifact_collaborators c
+    left join "user" u on u.id = c.user_id
+    where c.artifact_id = ${artifactId}
+    order by c.created_at asc
+  `;
+  return {
+    enabled: flag(flags[0]?.collaborators_enabled),
+    people: people.map(
+      (row): ArtifactCollaborator => ({
+        userId: row.user_id,
+        email: row.email ?? "",
+        name: row.name?.trim() || row.email || "Someone",
+        createdAt: iso(row.created_at),
+      }),
+    ),
+  };
+}
+
+async function requireOwnedOriginal(
+  userId: string,
+  idOrSlug: string,
+): Promise<Artifact> {
+  const artifact = await getArtifact(userId, idOrSlug);
+  if (artifact.following) {
+    throw new ReliquaryError(
+      "Only the original owner can manage collaborators",
+      403,
+      "FORBIDDEN",
+    );
+  }
+  return artifact;
+}
+
+async function loadRawArtifact(id: string): Promise<ArtifactRow | null> {
+  const sql = await getSql();
+  const rows = await sql<ArtifactRow>`
+    select id, slug, title, description, html, explainer_html, collection_id,
+      tags, kind, created_at, updated_at, user_id, source_artifact_id
+    from artifacts
+    where id = ${id}
+    limit 1
+  `;
+  return rows[0] ?? null;
+}
+
+async function writeSourceContent(
+  actorId: string,
+  sourceId: string,
+  next: FollowContent & { kind: ArtifactKind },
+): Promise<boolean> {
+  const row = await loadRawArtifact(sourceId);
+  if (!row) return false;
+  const previous: FollowContent = {
+    title: row.title,
+    html: row.html ?? "",
+    description: row.description,
+    explainerHtml: row.explainer_html ?? "",
+    tags: parseTags(row.tags),
+  };
+  const existingCount = await countRevisions(sourceId);
+  const snapshots = snapshotsToAppend({
+    previous,
+    next,
+    existingCount,
+  });
+  for (const snapshot of snapshots) {
+    await insertRevision(actorId, sourceId, {
+      ...snapshot,
+      kind: inferKind(snapshot.html),
+    });
+  }
+  const sql = await getSql();
+  await sql`
+    update artifacts set
+      title = ${next.title},
+      description = ${next.description},
+      html = ${next.html},
+      explainer_html = ${next.explainerHtml},
+      tags = ${JSON.stringify(next.tags)},
+      kind = ${next.kind},
+      updated_at = now()
+    where id = ${sourceId}
+  `;
+  return true;
+}
+
+async function hydrateFollows<T extends ArtifactSummary>(
   items: T[],
 ): Promise<T[]> {
   const ids = items
     .filter((item) => item.following && item.sourceArtifactId)
     .map((item) => item.sourceArtifactId as string);
-  if (ids.length === 0) return items.map((item) => ({ ...item, followLive: false }));
-  const sources = await loadSourcesByIds(ids);
-  return hydrateFromSources(items, sources);
+  if (ids.length === 0) {
+    return items.map((item) => ({ ...item, followLive: false }));
+  }
+  return hydrateFromSources(items, await loadSourcesByIds(ids));
+}
+
+async function hydrateArtifacts<T extends ArtifactSummary>(
+  userId: string,
+  items: T[],
+): Promise<T[]> {
+  return hydrateCanEditSource(userId, await hydrateFollows(items));
 }
 
 const seedByUser = new Map<string, Promise<void>>();
@@ -464,7 +653,7 @@ export async function listArtifacts(
     where a.user_id = ${userId}
     order by a.updated_at desc
   `;
-  let items = await hydrateArtifacts(rows.map(mapSummary));
+  let items = await hydrateArtifacts(userId, rows.map(mapSummary));
   items.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   if (opts?.collection) {
     const key = opts.collection;
@@ -515,8 +704,12 @@ export async function getArtifact(
     limit 1
   `;
   if (rows.length === 0) notFound("Artifact");
-  const [artifact] = await hydrateArtifacts([mapArtifact(rows[0]!)]);
-  return artifact!;
+  const [artifact] = await hydrateArtifacts(userId, [mapArtifact(rows[0]!)]);
+  if (!artifact) notFound("Artifact");
+  if (!artifact.following) {
+    artifact.collaboration = await loadCollaborationPanel(artifact.id);
+  }
+  return artifact;
 }
 
 type PublicArtifactRecord = {
@@ -543,8 +736,11 @@ async function loadPublicRecord(idOrSlug: string): Promise<PublicArtifactRecord>
     notFound("Artifact");
   }
   const row = rows[0]!;
-  const [artifact] = await hydrateArtifacts([mapArtifact(row)]);
-  return { artifact: artifact!, ownerUserId: row.user_id ?? null };
+  const [artifact] = await hydrateFollows([mapArtifact(row)]);
+  return {
+    artifact: asPublicArtifact(artifact!),
+    ownerUserId: row.user_id ?? null,
+  };
 }
 
 export async function getPublicArtifact(idOrSlug: string): Promise<Artifact> {
@@ -578,7 +774,7 @@ export async function findLibraryCopy(
     limit 1
   `;
   if (rows.length === 0) return null;
-  const [artifact] = await hydrateArtifacts([mapArtifact(rows[0]!)]);
+  const [artifact] = await hydrateArtifacts(userId, [mapArtifact(rows[0]!)]);
   return artifact!;
 }
 
@@ -714,6 +910,23 @@ export async function createArtifact(
   return getArtifact(userId, id);
 }
 
+async function updateLocalShelf(
+  userId: string,
+  artifactId: string,
+  slug: string,
+  collectionId: string | null,
+): Promise<Artifact> {
+  const sql = await getSql();
+  await sql`
+    update artifacts set
+      slug = ${slug},
+      collection_id = ${collectionId},
+      updated_at = now()
+    where id = ${artifactId} and user_id = ${userId}
+  `;
+  return getArtifact(userId, artifactId);
+}
+
 export async function updateArtifact(
   userId: string,
   idOrSlug: string,
@@ -761,23 +974,28 @@ export async function updateArtifact(
     explainerHtml: current.explainerHtml,
     tags: current.tags,
   };
-  const detach = shouldDetachFollow(
-    current.following,
-    currentContent,
-    nextContent,
-  );
-  const sql = await getSql();
-  if (current.following && !detach) {
-    await sql`
-      update artifacts set
-        slug = ${slug},
-        collection_id = ${collectionId},
-        updated_at = now()
-      where id = ${current.id} and user_id = ${userId}
-    `;
-    return getArtifact(userId, current.id);
-  }
   const contentChanged = followContentChanged(currentContent, nextContent);
+  const write = decideFollowContentWrite({
+    following: current.following,
+    contentChanged,
+    canWriteSource: current.canEditSource,
+  });
+  const sql = await getSql();
+
+  if (write === "shelf") {
+    return updateLocalShelf(userId, current.id, slug, collectionId);
+  }
+
+  if (write === "write-source" && current.sourceArtifactId) {
+    const wrote = await writeSourceContent(userId, current.sourceArtifactId, {
+      ...nextContent,
+      kind,
+    });
+    if (wrote) {
+      return updateLocalShelf(userId, current.id, slug, collectionId);
+    }
+  }
+
   if (contentChanged) {
     const existingCount = await countRevisions(current.id);
     const snapshots = snapshotsToAppend({
@@ -792,6 +1010,7 @@ export async function updateArtifact(
       });
     }
   }
+  const detach = write === "fork" || write === "write-source";
   await sql`
     update artifacts set
       slug = ${slug},
@@ -805,6 +1024,74 @@ export async function updateArtifact(
       source_artifact_id = ${detach ? null : current.sourceArtifactId},
       updated_at = now()
     where id = ${current.id} and user_id = ${userId}
+  `;
+  return getArtifact(userId, current.id);
+}
+
+export async function setCollaboratorsEnabled(
+  userId: string,
+  idOrSlug: string,
+  enabled: boolean,
+): Promise<Artifact> {
+  const current = await requireOwnedOriginal(userId, idOrSlug);
+  const sql = await getSql();
+  await sql`
+    update artifacts set collaborators_enabled = ${enabled}, updated_at = now()
+    where id = ${current.id} and user_id = ${userId}
+  `;
+  return getArtifact(userId, current.id);
+}
+
+export async function addArtifactCollaborator(
+  userId: string,
+  idOrSlug: string,
+  rawEmail: string,
+): Promise<Artifact> {
+  const current = await requireOwnedOriginal(userId, idOrSlug);
+  const email = normalizeCollaboratorEmail(rawEmail);
+  const sql = await getSql();
+  const users = email
+    ? await sql<{ id: string }>`
+        select id from "user" where lower(email) = ${email} limit 1
+      `
+    : [];
+  const panel = current.collaboration;
+  const decision = resolveCollaboratorInvite({
+    ownerUserId: userId,
+    email: rawEmail,
+    existingUser: users[0] ?? null,
+    alreadyOnList: Boolean(
+      users[0] && panel?.people.some((person) => person.userId === users[0]!.id),
+    ),
+    listCount: panel?.people.length ?? 0,
+  });
+  if (!decision.ok) {
+    throw new ReliquaryError(
+      collaboratorInviteMessage(decision.reason),
+      decision.reason === "not-found" ? 404 : 400,
+      decision.reason === "not-found" ? "NOT_FOUND" : "INVALID",
+    );
+  }
+  await sql`
+    insert into artifact_collaborators (artifact_id, user_id)
+    values (${current.id}, ${decision.userId})
+    on conflict (artifact_id, user_id) do nothing
+  `;
+  return getArtifact(userId, current.id);
+}
+
+export async function removeArtifactCollaborator(
+  userId: string,
+  idOrSlug: string,
+  collaboratorUserId: string,
+): Promise<Artifact> {
+  const current = await requireOwnedOriginal(userId, idOrSlug);
+  const target = collaboratorUserId.trim();
+  if (!target) throw new ReliquaryError("Collaborator is required");
+  const sql = await getSql();
+  await sql`
+    delete from artifact_collaborators
+    where artifact_id = ${current.id} and user_id = ${target}
   `;
   return getArtifact(userId, current.id);
 }

@@ -187,6 +187,69 @@ export const restoreRevisionFn = createServerFn({ method: "POST" })
     }
   });
 
+export const setCollaboratorsEnabledFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      enabled: z.boolean(),
+    }),
+  )
+  .middleware([authMiddleware])
+  .handler(async ({ context, data }) => {
+    try {
+      const { setCollaboratorsEnabled } = await import("./store.server");
+      return await setCollaboratorsEnabled(
+        context.userId,
+        data.slug,
+        data.enabled,
+      );
+    } catch (err) {
+      rethrow(err);
+    }
+  });
+
+export const addArtifactCollaboratorFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      email: z.string().trim().min(1).max(320),
+    }),
+  )
+  .middleware([authMiddleware])
+  .handler(async ({ context, data }) => {
+    try {
+      const { addArtifactCollaborator } = await import("./store.server");
+      return await addArtifactCollaborator(
+        context.userId,
+        data.slug,
+        data.email,
+      );
+    } catch (err) {
+      rethrow(err);
+    }
+  });
+
+export const removeArtifactCollaboratorFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      userId: z.string().min(1),
+    }),
+  )
+  .middleware([authMiddleware])
+  .handler(async ({ context, data }) => {
+    try {
+      const { removeArtifactCollaborator } = await import("./store.server");
+      return await removeArtifactCollaborator(
+        context.userId,
+        data.slug,
+        data.userId,
+      );
+    } catch (err) {
+      rethrow(err);
+    }
+  });
+
 export const deleteArtifactFn = createServerFn({ method: "POST" })
   .validator(z.object({ slug: z.string().min(1) }))
   .middleware([authMiddleware])

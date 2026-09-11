@@ -94,7 +94,7 @@ const TOOLS = [
   {
     name: "update_artifact",
     description:
-      "Update an artifact by id or slug. Only provided fields change. Collection and slug stay local on a followed relic; changing title, HTML, description, tags, or explainer forks it and stops following the original.",
+      "Update an artifact by id or slug. Only provided fields change. Collection and slug stay local on a followed relic. If you are an allowlisted collaborator, content changes write the shared original; otherwise they fork and stop following.",
     inputSchema: {
       type: "object",
       properties: {
