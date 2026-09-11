@@ -8,6 +8,7 @@ import { optionalSessionMiddleware } from "./optional-session";
 import { artifactCreateSchema, artifactPatchSchema, collectionCreateSchema } from "./schema";
 import type {
   Artifact,
+  ArtifactHistory,
   Collection,
   Library,
   SaveToLibraryResult,
@@ -139,6 +140,48 @@ export const updateArtifactFn = createServerFn({ method: "POST" })
     try {
       const { updateArtifact } = await import("./store.server");
       return await updateArtifact(context.userId, data.slug, data.patch);
+    } catch (err) {
+      rethrow(err);
+    }
+  });
+
+export const getArtifactHistoryFn = createServerFn({ method: "GET" })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      revisionId: z.string().min(1).optional(),
+    }),
+  )
+  .middleware([authMiddleware])
+  .handler(async ({ context, data }): Promise<ArtifactHistory> => {
+    try {
+      const { getArtifactHistory } = await import("./store.server");
+      return await getArtifactHistory(
+        context.userId,
+        data.slug,
+        data.revisionId,
+      );
+    } catch (err) {
+      rethrow(err);
+    }
+  });
+
+export const restoreRevisionFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      revisionId: z.string().min(1),
+    }),
+  )
+  .middleware([authMiddleware])
+  .handler(async ({ context, data }) => {
+    try {
+      const { restoreRevision } = await import("./store.server");
+      return await restoreRevision(
+        context.userId,
+        data.slug,
+        data.revisionId,
+      );
     } catch (err) {
       rethrow(err);
     }

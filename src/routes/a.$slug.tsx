@@ -1,5 +1,6 @@
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import {
+  Clock,
   Code2,
   Link2,
   Maximize2,
@@ -180,6 +181,15 @@ function ArtifactPage() {
                 </DropdownMenuItem>
                 {library.guest ? null : (
                   <>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/a/$slug/history"
+                        params={{ slug: artifact.slug }}
+                      >
+                        <Clock className="size-3.5" />
+                        History
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-danger"

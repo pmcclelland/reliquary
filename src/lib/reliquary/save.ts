@@ -135,6 +135,19 @@ function sameTags(a: string[], b: string[]): boolean {
   return a.every((tag, i) => tag === b[i]);
 }
 
+export function followContentChanged(
+  current: FollowContent,
+  next: FollowContent,
+): boolean {
+  return (
+    current.title !== next.title ||
+    current.html !== next.html ||
+    current.description !== next.description ||
+    current.explainerHtml !== next.explainerHtml ||
+    !sameTags(current.tags, next.tags)
+  );
+}
+
 /**
  * Overlay share-origin fields from a live source. Local id, slug, collection,
  * and createdAt stay on the recipient's row. Missing/unreadable source →
@@ -179,12 +192,6 @@ export function shouldDetachFollow(
   next: FollowContent,
 ): boolean {
   if (!following) return false;
-  return (
-    current.title !== next.title ||
-    current.html !== next.html ||
-    current.description !== next.description ||
-    current.explainerHtml !== next.explainerHtml ||
-    !sameTags(current.tags, next.tags)
-  );
+  return followContentChanged(current, next);
 }
 

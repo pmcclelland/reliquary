@@ -7,9 +7,12 @@ import { SEED_ARTIFACTS, SEED_COLLECTIONS } from "./seed";
 import { slugify } from "./slug";
 import type {
   Artifact,
+  ArtifactHistory,
   ArtifactInput,
   ArtifactKind,
   ArtifactPatch,
+  ArtifactRevision,
+  ArtifactRevisionSummary,
   ArtifactSummary,
   Collection,
   CollectionInput,
@@ -18,6 +21,7 @@ import type {
 import {
   artifactCopyInput,
   canonicalFollowSourceId,
+  followContentChanged,
   followMeta,
   libraryCopyLookupIds,
   resolveFollowedArtifact,
@@ -25,6 +29,12 @@ import {
   type FollowContent,
   type FollowSourceFields,
 } from "./save";
+import {
+  canRestoreRevision,
+  historyTarget,
+  pickSelectedRevisionId,
+  snapshotsToAppend,
+} from "./revisions";
 import { ensureDocument } from "./wrap";
 
 type ArtifactRow = {
@@ -44,6 +54,20 @@ type ArtifactRow = {
   updated_at: unknown;
   user_id?: string;
   source_artifact_id?: string | null;
+};
+
+type RevisionRow = {
+  id: string;
+  artifact_id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  html?: string;
+  explainer_html?: string;
+  tags: string;
+  kind: string;
+  html_bytes?: number;
+  created_at: unknown;
 };
 
 type CollectionRow = {
@@ -206,6 +230,88 @@ function hydrateFromSources<T extends ArtifactSummary>(
         : null,
     ),
   );
+}
+
+function mapRevisionSummary(row: RevisionRow): ArtifactRevisionSummary {
+  const explainerHtml = row.explainer_html ?? "";
+  const htmlBytes = Number(row.html_bytes ?? 0) ||
+    new TextEncoder().encode(row.html ?? "").length;
+  return {
+    id: row.id,
+    artifactId: row.artifact_id,
+    title: row.title,
+    description: row.description,
+    tags: parseTags(row.tags),
+    kind: row.kind === "react" ? "react" : "html",
+    hasExplainer: Boolean(explainerHtml.trim()),
+    htmlBytes,
+    createdAt: iso(row.created_at),
+  };
+}
+
+function mapRevision(row: RevisionRow): ArtifactRevision {
+  return {
+    ...mapRevisionSummary(row),
+    html: row.html ?? "",
+    explainerHtml: row.explainer_html ?? "",
+  };
+}
+
+async function countRevisions(artifactId: string): Promise<number> {
+  const sql = await getSql();
+  const rows = await sql<{ n: number }>`
+    select count(*)::int as n from artifact_revisions
+    where artifact_id = ${artifactId}
+  `;
+  return Number(rows[0]?.n ?? 0);
+}
+
+async function insertRevision(
+  userId: string,
+  artifactId: string,
+  snapshot: FollowContent & { kind: ArtifactKind },
+): Promise<void> {
+  const sql = await getSql();
+  await sql`
+    insert into artifact_revisions (
+      id, artifact_id, user_id, title, description, html, explainer_html, tags, kind
+    )
+    values (
+      ${crypto.randomUUID()}, ${artifactId}, ${userId}, ${snapshot.title},
+      ${snapshot.description}, ${snapshot.html}, ${snapshot.explainerHtml},
+      ${JSON.stringify(snapshot.tags)}, ${snapshot.kind}
+    )
+  `;
+}
+
+async function listRevisionRows(
+  artifactId: string,
+): Promise<ArtifactRevisionSummary[]> {
+  const sql = await getSql();
+  const rows = await sql<RevisionRow>`
+    select id, artifact_id, user_id, title, description, explainer_html, tags, kind,
+      octet_length(html) as html_bytes, created_at
+    from artifact_revisions
+    where artifact_id = ${artifactId}
+    order by created_at desc
+  `;
+  return rows.map(mapRevisionSummary);
+}
+
+async function loadRevision(
+  artifactId: string,
+  revisionId: string,
+): Promise<ArtifactRevision | null> {
+  const sql = await getSql();
+  const rows = await sql<RevisionRow>`
+    select id, artifact_id, user_id, title, description, html, explainer_html,
+      tags, kind, created_at
+    from artifact_revisions
+    where artifact_id = ${artifactId} and id = ${revisionId}
+    limit 1
+  `;
+  if (rows.length === 0) return null;
+  return mapRevision(rows[0]!);
 }
 
 async function hydrateArtifacts<T extends ArtifactSummary>(
@@ -597,6 +703,14 @@ export async function createArtifact(
       ${collectionId}, ${JSON.stringify(tags)}, ${kind}, ${sourceArtifactId}
     )
   `;
+  await insertRevision(userId, id, {
+    title,
+    html,
+    description: input.description?.trim() ?? "",
+    explainerHtml: prepareExplainer(input.explainer),
+    tags,
+    kind,
+  });
   return getArtifact(userId, id);
 }
 
@@ -663,6 +777,21 @@ export async function updateArtifact(
     `;
     return getArtifact(userId, current.id);
   }
+  const contentChanged = followContentChanged(currentContent, nextContent);
+  if (contentChanged) {
+    const existingCount = await countRevisions(current.id);
+    const snapshots = snapshotsToAppend({
+      previous: currentContent,
+      next: nextContent,
+      existingCount,
+    });
+    for (const snapshot of snapshots) {
+      await insertRevision(userId, current.id, {
+        ...snapshot,
+        kind: inferKind(snapshot.html),
+      });
+    }
+  }
   await sql`
     update artifacts set
       slug = ${slug},
@@ -688,6 +817,53 @@ export async function deleteArtifact(
   const sql = await getSql();
   await sql`delete from artifacts where id = ${current.id} and user_id = ${userId}`;
   return { ok: true };
+}
+
+export async function getArtifactHistory(
+  userId: string,
+  idOrSlug: string,
+  revisionId?: string | null,
+): Promise<ArtifactHistory> {
+  const artifact = await getArtifact(userId, idOrSlug);
+  const target = historyTarget(artifact);
+  const revisions = await listRevisionRows(target.artifactId);
+  const selectedId = pickSelectedRevisionId(
+    revisions.map((row) => row.id),
+    revisionId,
+  );
+  const selected = selectedId
+    ? await loadRevision(target.artifactId, selectedId)
+    : null;
+  return {
+    artifact,
+    revisions,
+    selected,
+    fromSource: target.fromSource,
+    canRestore: canRestoreRevision(target.fromSource),
+  };
+}
+
+export async function restoreRevision(
+  userId: string,
+  idOrSlug: string,
+  revisionId: string,
+): Promise<Artifact> {
+  const history = await getArtifactHistory(userId, idOrSlug, revisionId);
+  if (!history.canRestore) {
+    throw new ReliquaryError(
+      "This history belongs to the shared original",
+      403,
+      "FORBIDDEN",
+    );
+  }
+  if (!history.selected) notFound("Revision");
+  return updateArtifact(userId, history.artifact.id, {
+    title: history.selected.title,
+    html: history.selected.html,
+    description: history.selected.description,
+    explainer: history.selected.explainerHtml,
+    tags: history.selected.tags,
+  });
 }
 
 export async function createCollection(

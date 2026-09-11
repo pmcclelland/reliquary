@@ -70,6 +70,32 @@ export type SaveToLibraryResult = {
   created: boolean;
 };
 
+export type ArtifactRevisionSummary = {
+  id: string;
+  artifactId: string;
+  title: string;
+  description: string;
+  tags: string[];
+  kind: ArtifactKind;
+  hasExplainer: boolean;
+  htmlBytes: number;
+  createdAt: string;
+};
+
+export type ArtifactRevision = ArtifactRevisionSummary & {
+  html: string;
+  explainerHtml: string;
+};
+
+export type ArtifactHistory = {
+  artifact: Artifact;
+  revisions: ArtifactRevisionSummary[];
+  selected: ArtifactRevision | null;
+  /** True when this list is the live source's history, not the follow row. */
+  fromSource: boolean;
+  canRestore: boolean;
+};
+
 export type ArtifactPatch = Partial<ArtifactInput>;
 
 export type CollectionInput = {
