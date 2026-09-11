@@ -228,7 +228,7 @@ function ArtifactPage() {
             </DropdownMenu>
           </div>
         </header>
-        <div className="min-h-[70vh] flex-1 overflow-hidden bg-chip">
+        <div className="min-h-[70vh] min-w-0 flex-1 overflow-hidden bg-chip">
           {source ? (
             <SourceView
               html={artifact.html}

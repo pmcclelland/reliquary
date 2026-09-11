@@ -53,6 +53,7 @@ describe("ensureDocument", () => {
     const out = ensureDocument(`<h1>Hello</h1>`, TITLE);
     assert.match(out, /<h1>Hello<\/h1>/);
     assert.match(out, /box-sizing: border-box/);
+    assert.match(out, /overflow-wrap: break-word/);
     // The old wrapper imposed a serif face, a cream ground and a reading width.
     assert.doesNotMatch(out, /Georgia/);
     assert.doesNotMatch(out, /#faf7f1/);

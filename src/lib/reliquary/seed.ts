@@ -1,3 +1,5 @@
+import { DISPLAY_HEADING_FIXTURE_HTML } from "./stage.ts";
+
 /** Sample shelves copied into a new account, and shown in-memory to guests. */
 export const SEED_COLLECTIONS = [
   {
@@ -389,6 +391,17 @@ export const SEED_ARTIFACTS = [
     tags: ["guide", "wiki"],
     kind: "html" as const,
     html: SEED_WELCOME_HTML,
+  },
+  {
+    id: "art-display-heading",
+    slug: "display-heading",
+    title: "Display heading",
+    description:
+      "A full-bleed nowrap title used to check the host stage at laptop and split widths.",
+    collectionId: "col-guides",
+    tags: ["guide", "type"],
+    kind: "html" as const,
+    html: DISPLAY_HEADING_FIXTURE_HTML,
   },
   {
     id: "art-harmonic",

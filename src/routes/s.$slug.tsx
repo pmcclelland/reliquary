@@ -74,7 +74,7 @@ function SharePage() {
           <Link2 className="size-4" />
         </Button>
       </header>
-      <div className="min-h-0 flex-1 bg-chip">
+      <div className="min-h-0 min-w-0 flex-1 bg-chip">
         <ArtifactFrame html={artifact.html} title={artifact.title} />
       </div>
       <ShareLinkDialog

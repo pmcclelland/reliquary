@@ -95,6 +95,7 @@ function wrapFragment(source: string, title: string): string {
     html { -webkit-text-size-adjust: 100%; }
     body { margin: 0; }
     h1, h2, h3, h4, p, dl, dd, figure, blockquote { margin: 0; }
+    h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; max-width: 100%; }
     ul, ol { margin: 0; padding: 0; }
     img, svg, video, canvas, iframe { display: block; max-width: 100%; }
     button, input, select, textarea { font: inherit; color: inherit; }
