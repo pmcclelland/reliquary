@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import type { Library } from "@/lib/reliquary/types";
+import { SIDEBAR_ID, useSidebarCollapsed } from "@/lib/sidebar-preference";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "./command-palette";
 import { Wordmark } from "./logo";
@@ -20,14 +21,20 @@ export function AppShell({
   children: ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { collapsed, toggleCollapsed } = useSidebarCollapsed();
 
   return (
     <div className="flex h-dvh bg-bg text-fg">
-      <aside className="hidden h-full w-64 shrink-0 border-r border-border bg-surface md:flex md:flex-col">
+      <aside
+        id={SIDEBAR_ID}
+        className="reliquary-sidebar-desktop hidden h-full shrink-0 overflow-hidden border-r border-border bg-surface md:flex md:flex-col"
+      >
         <Sidebar
           library={library}
           activeSlug={activeSlug}
           collectionSlug={collectionSlug}
+          collapsed={collapsed}
+          onToggleCollapsed={toggleCollapsed}
         />
       </aside>
 

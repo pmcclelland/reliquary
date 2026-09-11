@@ -29,7 +29,7 @@ export function ThemeToggle({
   align = "end",
 }: {
   variant?: "icon" | "row";
-  side?: "top" | "bottom";
+  side?: "top" | "bottom" | "left" | "right";
   align?: "start" | "center" | "end";
 }) {
   const { theme, setTheme } = useTheme();

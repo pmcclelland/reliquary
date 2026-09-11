@@ -49,26 +49,35 @@ export function RedirectToSignIn({ to = SIGN_IN_PATH }: { to?: string }) {
  * `design-ui` skill). Sign-out is only shown when auth is enabled (the
  * disabled-auth dev user has nothing to sign out of).
  */
-export function UserButton() {
+export function UserButton({ compact = false }: { compact?: boolean }) {
   const user = useCurrentUser();
   // Sign-out can take a moment (and can fail when deployed), so the control
   // shows it is working and cannot be fired twice.
   const [signingOut, setSigningOut] = useState(false);
   if (!user) return null;
   const label = user.displayName ?? user.primaryEmail ?? "Account";
+  const avatar = user.profileImageUrl ? (
+    <img
+      src={user.profileImageUrl}
+      alt={compact ? label : ""}
+      className="size-8 shrink-0 rounded-full object-cover"
+    />
+  ) : (
+    <span
+      className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium text-fg"
+      aria-label={compact ? label : undefined}
+    >
+      {label.charAt(0).toUpperCase()}
+    </span>
+  );
+
+  if (compact) {
+    return <div className="flex justify-center py-1">{avatar}</div>;
+  }
+
   return (
     <div className="flex min-w-0 items-center gap-2 px-1">
-      {user.profileImageUrl ? (
-        <img
-          src={user.profileImageUrl}
-          alt=""
-          className="size-8 shrink-0 rounded-full object-cover"
-        />
-      ) : (
-        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium text-fg">
-          {label.charAt(0).toUpperCase()}
-        </span>
-      )}
+      {avatar}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">{label}</p>
         {authEnabled && (
