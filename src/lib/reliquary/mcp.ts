@@ -36,7 +36,7 @@ When creating artifacts:
 - Keep work self-contained: no local file references. CDNs are allowed.
 - Set title, a short description, optional collection (id or slug), and tags.
 - explainer is optional HTML notes shown beside Source. Do not invent one unless the user asked for notes or an explanation. Cite relic lines with <a data-line="12"> or data-line="12-28" against the stored html.
-- After publishing, the live share view is /s/{slug} (thin Reliquary bar, full-bleed artifact). The wiki page is /a/{slug}.
+- After publishing, the live share view is /s/{slug} (thin Reliquary bar, full-bleed artifact). The wiki page is /a/{slug}. A public share URL does not grant edit. Recipients who save the share follow the live tip. Allowlisted collaborators write that tip; other content edits fork.
 
 Use list_artifacts before editing so you target the right id or slug.`;
 
