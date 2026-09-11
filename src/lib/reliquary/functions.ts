@@ -6,7 +6,13 @@ import { ReliquaryError } from "./errors";
 import { getGuestArtifact, getGuestCollection, getGuestLibrary } from "./guest";
 import { optionalSessionMiddleware } from "./optional-session";
 import { artifactCreateSchema, artifactPatchSchema, collectionCreateSchema } from "./schema";
-import type { Artifact, Collection, Library } from "./types";
+import type {
+  Artifact,
+  Collection,
+  Library,
+  SaveToLibraryResult,
+  ShareView,
+} from "./types";
 import type { McpTokenMeta } from "./mcp-token.server";
 
 type AuthOptions = { google: boolean; email: boolean };
@@ -59,6 +65,30 @@ export const getPublicArtifact = createServerFn({ method: "GET" })
     try {
       const { getPublicArtifact: load } = await import("./store.server");
       return await load(data.slug);
+    } catch (err) {
+      rethrow(err);
+    }
+  });
+
+export const getShareView = createServerFn({ method: "GET" })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .middleware([optionalSessionMiddleware])
+  .handler(async ({ context, data }): Promise<ShareView> => {
+    try {
+      const { getShareView: load } = await import("./store.server");
+      return await load(context.userId, data.slug);
+    } catch (err) {
+      rethrow(err);
+    }
+  });
+
+export const saveToLibraryFn = createServerFn({ method: "POST" })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .middleware([authMiddleware])
+  .handler(async ({ context, data }): Promise<SaveToLibraryResult> => {
+    try {
+      const { saveSharedArtifact } = await import("./store.server");
+      return await saveSharedArtifact(context.userId, data.slug);
     } catch (err) {
       rethrow(err);
     }

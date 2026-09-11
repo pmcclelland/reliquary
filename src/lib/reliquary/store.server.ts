@@ -15,6 +15,7 @@ import type {
   CollectionInput,
   Library,
 } from "./types";
+import { artifactCopyInput, libraryCopyLookupIds } from "./save";
 import { ensureDocument } from "./wrap";
 
 type ArtifactRow = {
@@ -32,6 +33,8 @@ type ArtifactRow = {
   kind: string;
   created_at: unknown;
   updated_at: unknown;
+  user_id?: string;
+  source_artifact_id?: string | null;
 };
 
 type CollectionRow = {
@@ -319,10 +322,16 @@ export async function getArtifact(
   return mapArtifact(rows[0]!);
 }
 
-export async function getPublicArtifact(idOrSlug: string): Promise<Artifact> {
+type PublicArtifactRecord = {
+  artifact: Artifact;
+  ownerUserId: string | null;
+};
+
+async function loadPublicRecord(idOrSlug: string): Promise<PublicArtifactRecord> {
   const sql = await getSql();
   const rows = await sql<ArtifactRow>`
-    select a.id, a.slug, a.title, a.description, a.html, a.collection_id, a.tags, a.kind,
+    select a.id, a.user_id, a.slug, a.title, a.description, a.html, a.explainer_html,
+      a.collection_id, a.tags, a.kind,
       a.created_at, a.updated_at,
       c.slug as collection_slug, c.title as collection_title
     from artifacts a
@@ -333,10 +342,99 @@ export async function getPublicArtifact(idOrSlug: string): Promise<Artifact> {
   `;
   if (rows.length === 0) {
     const guest = getGuestArtifact(idOrSlug);
-    if (guest) return guest;
+    if (guest) return { artifact: guest, ownerUserId: null };
     notFound("Artifact");
   }
+  const row = rows[0]!;
+  return { artifact: mapArtifact(row), ownerUserId: row.user_id ?? null };
+}
+
+export async function getPublicArtifact(idOrSlug: string): Promise<Artifact> {
+  return (await loadPublicRecord(idOrSlug)).artifact;
+}
+
+export async function findLibraryCopy(
+  userId: string,
+  source: { id: string; ownerUserId: string | null },
+): Promise<Artifact | null> {
+  await ensureSeeded(userId);
+  if (source.ownerUserId === userId) {
+    return getArtifact(userId, source.id);
+  }
+  const { ids, sourceArtifactId } = libraryCopyLookupIds(userId, source.id);
+  const sql = await getSql();
+  const rows = await sql<ArtifactRow>`
+    select a.id, a.slug, a.title, a.description, a.html, a.explainer_html,
+      a.collection_id, a.tags, a.kind,
+      a.created_at, a.updated_at,
+      c.slug as collection_slug, c.title as collection_title
+    from artifacts a
+    left join collections c on c.id = a.collection_id
+    where a.user_id = ${userId}
+      and (
+        a.id = ${ids[0]}
+        or a.id = ${ids[1]}
+        or a.source_artifact_id = ${sourceArtifactId}
+      )
+    order by a.updated_at desc
+    limit 1
+  `;
+  if (rows.length === 0) return null;
   return mapArtifact(rows[0]!);
+}
+
+export async function getShareView(
+  userId: string | null,
+  idOrSlug: string,
+): Promise<{
+  artifact: Artifact;
+  inLibrarySlug: string | null;
+  signedIn: boolean;
+}> {
+  const record = await loadPublicRecord(idOrSlug);
+  if (!userId) {
+    return {
+      artifact: record.artifact,
+      inLibrarySlug: null,
+      signedIn: false,
+    };
+  }
+  const copy = await findLibraryCopy(userId, {
+    id: record.artifact.id,
+    ownerUserId: record.ownerUserId,
+  });
+  return {
+    artifact: record.artifact,
+    inLibrarySlug: copy?.slug ?? null,
+    signedIn: true,
+  };
+}
+
+export async function saveSharedArtifact(
+  userId: string,
+  idOrSlug: string,
+): Promise<{ artifact: Artifact; created: boolean }> {
+  const record = await loadPublicRecord(idOrSlug);
+  const existing = await findLibraryCopy(userId, {
+    id: record.artifact.id,
+    ownerUserId: record.ownerUserId,
+  });
+  if (existing) return { artifact: existing, created: false };
+
+  try {
+    const artifact = await createArtifact(userId, {
+      ...artifactCopyInput(record.artifact),
+      sourceArtifactId: record.artifact.id,
+    });
+    return { artifact, created: true };
+  } catch (err) {
+    const raced = await findLibraryCopy(userId, {
+      id: record.artifact.id,
+      ownerUserId: record.ownerUserId,
+    });
+    if (raced) return { artifact: raced, created: false };
+    throw err;
+  }
 }
 
 export async function getCollection(
@@ -378,13 +476,17 @@ export async function createArtifact(
   const slug = await uniqueSlug("artifacts", userId, input.slug || title);
   const tags = normalizeTags(input.tags ?? []);
   const kind: ArtifactKind = inferKind(html);
+  const sourceArtifactId = input.sourceArtifactId?.trim() || null;
   const sql = await getSql();
   await sql`
-    insert into artifacts (id, user_id, slug, title, description, html, explainer_html, collection_id, tags, kind)
+    insert into artifacts (
+      id, user_id, slug, title, description, html, explainer_html,
+      collection_id, tags, kind, source_artifact_id
+    )
     values (
       ${id}, ${userId}, ${slug}, ${title}, ${input.description?.trim() ?? ""}, ${html},
       ${prepareExplainer(input.explainer)},
-      ${collectionId}, ${JSON.stringify(tags)}, ${kind}
+      ${collectionId}, ${JSON.stringify(tags)}, ${kind}, ${sourceArtifactId}
     )
   `;
   return getArtifact(userId, id);
