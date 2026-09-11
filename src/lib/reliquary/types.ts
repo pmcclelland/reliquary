@@ -47,6 +47,19 @@ export type ArtifactInput = {
   collection?: string | null;
   tags?: string[];
   slug?: string;
+  /** Original artifact id when this row is a saved copy. */
+  sourceArtifactId?: string | null;
+};
+
+export type ShareView = {
+  artifact: Artifact;
+  inLibrarySlug: string | null;
+  signedIn: boolean;
+};
+
+export type SaveToLibraryResult = {
+  artifact: Artifact;
+  created: boolean;
 };
 
 export type ArtifactPatch = Partial<ArtifactInput>;

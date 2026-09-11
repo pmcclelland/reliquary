@@ -3,24 +3,25 @@ import { Link2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArtifactFrame } from "@/components/artifact/frame";
+import { SaveToLibraryButton } from "@/components/artifact/save-to-library";
 import { ShareLinkDialog } from "@/components/artifact/share-dialog";
 import { Wordmark } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/reliquary/constants";
-import { getPublicArtifact } from "@/lib/reliquary/functions";
+import { getShareView } from "@/lib/reliquary/functions";
 import { artifactShareUrl, copyText } from "@/lib/utils";
 
 export const Route = createFileRoute("/s/$slug")({
-  loader: ({ params }) => getPublicArtifact({ data: { slug: params.slug } }),
+  loader: ({ params }) => getShareView({ data: { slug: params.slug } }),
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: loaderData
-          ? `${loaderData.title} · ${APP_NAME}`
+        title: loaderData?.artifact
+          ? `${loaderData.artifact.title} · ${APP_NAME}`
           : APP_NAME,
       },
-      ...(loaderData?.description
-        ? [{ name: "description", content: loaderData.description }]
+      ...(loaderData?.artifact.description
+        ? [{ name: "description", content: loaderData.artifact.description }]
         : []),
     ],
   }),
@@ -28,7 +29,8 @@ export const Route = createFileRoute("/s/$slug")({
 });
 
 function SharePage() {
-  const artifact = Route.useLoaderData();
+  const { artifact, inLibrarySlug, signedIn } = Route.useLoaderData();
+  const { slug } = Route.useParams();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   async function share() {
@@ -54,6 +56,12 @@ function SharePage() {
         <p className="min-w-0 flex-1 truncate text-sm text-muted">
           {artifact.title}
         </p>
+        <SaveToLibraryButton
+          sourceKey={slug}
+          sharePath={`/s/${slug}`}
+          inLibrarySlug={inLibrarySlug}
+          signedIn={signedIn}
+        />
         <Button
           type="button"
           variant="ghost"

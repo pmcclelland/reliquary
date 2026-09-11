@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { Vitrine } from "@/components/layout/vitrine";
 import { Wordmark } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -12,15 +13,23 @@ import { authClient, authEnabled, signInWithGoogle } from "@/lib/auth/client";
 import { redirectIfSignedIn } from "@/lib/auth/protect";
 import { getAuthOptions } from "@/lib/reliquary/functions";
 import { APP_TAGLINE } from "@/lib/reliquary/constants";
+import { safeReturnPath } from "@/lib/reliquary/save";
+
+const loginSearchSchema = z.object({
+  next: z.string().optional(),
+});
 
 export const Route = createFileRoute("/login")({
-  beforeLoad: ({ context }) => redirectIfSignedIn(context),
+  validateSearch: loginSearchSchema,
+  beforeLoad: ({ context, search }) => redirectIfSignedIn(context, search.next),
   loader: () => getAuthOptions(),
   component: Login,
 });
 
 function Login() {
   const options = Route.useLoaderData();
+  const { next } = Route.useSearch();
+  const afterSignIn = safeReturnPath(next);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,8 +41,11 @@ function Login() {
     setBusy(true);
     try {
       await signInWithGoogle({
-        callbackURL: "/",
-        errorCallbackURL: "/login",
+        callbackURL: afterSignIn,
+        errorCallbackURL:
+          afterSignIn === "/"
+            ? "/login"
+            : `/login?next=${encodeURIComponent(afterSignIn)}`,
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
@@ -50,18 +62,18 @@ function Login() {
           email,
           password,
           name: name.trim() || email.split("@")[0] || "Member",
-          callbackURL: "/",
+          callbackURL: afterSignIn,
         });
         if (error) throw new Error(error.message ?? "Could not create account");
       } else {
         const { error } = await authClient.signIn.email({
           email,
           password,
-          callbackURL: "/",
+          callbackURL: afterSignIn,
         });
         if (error) throw new Error(error.message ?? "Could not sign in");
       }
-      window.location.href = "/";
+      window.location.href = afterSignIn;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not sign in");
       setBusy(false);
