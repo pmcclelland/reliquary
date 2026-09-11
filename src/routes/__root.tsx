@@ -1,15 +1,11 @@
-import {
-  createRootRoute,
-  HeadContent,
-  Outlet,
-  Scripts,
-} from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { AuthProvider } from "@/lib/auth/provider";
 import type { SessionUser } from "@/lib/auth/protect";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, APP_TAGLINE } from "@/lib/reliquary/constants";
+import { sidebarBootstrapScript } from "@/lib/sidebar-preference";
 import { ThemeProvider, themeBootstrapScript, useTheme } from "@/lib/theme";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
@@ -23,9 +19,7 @@ const fetchSessionUser = createServerFn({ method: "GET" }).handler(async () => {
 function NotFound() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-bg px-6 text-center text-fg">
-      <p className="text-[11px] font-medium tracking-[0.16em] text-subtle uppercase">
-        Reliquary
-      </p>
+      <p className="text-[11px] font-medium tracking-[0.16em] text-subtle uppercase">Reliquary</p>
       <h1 className="font-serif text-3xl tracking-tight">Not in the library</h1>
       <p className="max-w-sm text-sm text-muted">
         That page or artifact does not exist. It may have been moved or removed.
@@ -91,6 +85,7 @@ export const Route = createRootRoute({
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+        <script dangerouslySetInnerHTML={{ __html: sidebarBootstrapScript }} />
       </head>
       <body>
         <PreviewHostBridge />
