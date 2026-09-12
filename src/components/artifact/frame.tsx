@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { EXPLAINER_MESSAGE_SOURCE } from "@/lib/reliquary/explainer";
-import {
-  ARTIFACT_STAGE_MIN_WIDTH_PX,
-  injectStageSafety,
-} from "@/lib/reliquary/stage";
+import { injectStageSafety } from "@/lib/reliquary/stage";
 import { cn } from "@/lib/utils";
 
 export function ArtifactFrame({
@@ -51,28 +48,22 @@ export function ArtifactFrame({
     return () => window.removeEventListener("message", onMessage);
   }, [onLineRef]);
 
+  if (!src) {
+    return (
+      <div
+        className={cn("bg-surface-muted", className)}
+        aria-hidden="true"
+      />
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        "h-full min-h-0 min-w-0 overflow-x-auto overflow-y-hidden",
-        className,
-      )}
-    >
-      {src ? (
-        <iframe
-          title={title}
-          src={src}
-          sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock"
-          referrerPolicy="no-referrer"
-          className="block h-full border-0 bg-surface"
-          style={{
-            width: "100%",
-            minWidth: ARTIFACT_STAGE_MIN_WIDTH_PX,
-          }}
-        />
-      ) : (
-        <div className="h-full bg-surface-muted" aria-hidden="true" />
-      )}
-    </div>
+    <iframe
+      title={title}
+      src={src}
+      sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock"
+      referrerPolicy="no-referrer"
+      className={cn("h-full w-full border-0 bg-surface", className)}
+    />
   );
 }

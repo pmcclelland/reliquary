@@ -397,7 +397,7 @@ export const SEED_ARTIFACTS = [
     slug: "display-heading",
     title: "Display heading",
     description:
-      "A full-bleed nowrap title used to check the host stage at laptop and split widths.",
+      "A full-bleed nowrap title used to check preview-time heading wrap.",
     collectionId: "col-guides",
     tags: ["guide", "type"],
     kind: "html" as const,
