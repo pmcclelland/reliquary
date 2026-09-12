@@ -1,20 +1,15 @@
 /**
- * Host stage for relic iframes.
+ * Preview-time safety for relic iframes.
  *
- * Share (`/s/:slug`) and the edit split preview size the iframe to the pane,
- * not to a laptop. Full-bleed relics with large titles, `vw` type, or nowrap
- * heroes then collide or wrap into a crushed stack. The stage keeps a laptop
- * floor and scrolls sideways instead of compressing the document.
- *
- * Safety CSS is injected at preview time only — stored HTML is unchanged.
+ * Share (`/s/:slug`) and the edit split preview size the iframe to the pane.
+ * Full-bleed relics with large titles can wrap into a crushed stack. Safety CSS
+ * is injected at preview time only — stored HTML is unchanged — so headings
+ * wrap (`overflow-wrap: break-word; max-width: 100%`) instead of overflowing.
  */
-
-export const ARTIFACT_STAGE_MIN_WIDTH_PX = 768;
 
 export const STAGE_STYLE_MARK = "data-reliquary-stage";
 
 const STAGE_SAFETY_CSS = `
-html { overflow-x: auto; }
 h1, h2, h3, h4, h5, h6 {
   overflow-wrap: break-word;
   max-width: 100%;
@@ -38,7 +33,7 @@ export function injectStageSafety(html: string): string {
   return `${tag}\n${html}`;
 }
 
-/** Fixture: a nowrap display title that collides in a narrow pane. */
+/** Fixture: a nowrap display title used to check preview-time heading wrap inject. */
 export const DISPLAY_HEADING_FIXTURE_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>

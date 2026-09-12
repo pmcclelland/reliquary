@@ -1,7 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  ARTIFACT_STAGE_MIN_WIDTH_PX,
   DISPLAY_HEADING_FIXTURE_HTML,
   STAGE_STYLE_MARK,
   injectStageSafety,
@@ -13,6 +12,7 @@ describe("injectStageSafety", () => {
     const once = injectStageSafety(doc);
     assert.match(once, new RegExp(STAGE_STYLE_MARK));
     assert.match(once, /overflow-wrap:\s*break-word/);
+    assert.match(once, /max-width:\s*100%/);
     assert.match(once, /<head>\s*<style data-reliquary-stage>/);
     assert.equal(injectStageSafety(once), once);
   });
@@ -39,11 +39,6 @@ describe("injectStageSafety", () => {
     assert.match(out, /white-space:\s*nowrap/);
     assert.match(out, /Things that move\./);
     assert.match(out, new RegExp(STAGE_STYLE_MARK));
-  });
-});
-
-describe("stage floor", () => {
-  it("is a laptop content width, not a phone", () => {
-    assert.equal(ARTIFACT_STAGE_MIN_WIDTH_PX, 768);
+    assert.match(out, /overflow-wrap:\s*break-word/);
   });
 });
