@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Group, Panel, Separator as ResizeSeparator } from "react-resizable-panels";
 import { ensureExplainer, parseLineRange, type LineRange } from "@/lib/reliquary/explainer";
-import {
-  highlightHtmlSource,
-  plainSourceLines,
-  type SourceLine,
-} from "@/lib/reliquary/highlight-source";
 import { cn } from "@/lib/utils";
 import { ArtifactFrame } from "./frame";
+
+type SourceLine = { text: string; style?: Record<string, string> }[];
+
+function fallbackLines(html: string): SourceLine[] {
+  return html.split("\n").map((line) => [{ text: line }]);
+}
 
 export function SourceView({
   html,
@@ -55,7 +56,7 @@ export function SourceView({
 }
 
 function SourceListing({ html, highlight }: { html: string; highlight: LineRange | null }) {
-  const fallback = useMemo(() => plainSourceLines(html), [html]);
+  const fallback = useMemo(() => fallbackLines(html), [html]);
   const [painted, setPainted] = useState<{
     html: string;
     lines: SourceLine[];
@@ -65,9 +66,14 @@ function SourceListing({ html, highlight }: { html: string; highlight: LineRange
 
   useEffect(() => {
     let cancelled = false;
-    void highlightHtmlSource(html).then((next) => {
-      if (!cancelled) setPainted({ html, lines: next });
-    });
+    void import("@/lib/reliquary/highlight-source")
+      .then((mod) => mod.highlightHtmlSource(html))
+      .then((next) => {
+        if (!cancelled) setPainted({ html, lines: next });
+      })
+      .catch(() => {
+        /* keep the plain listing */
+      });
     return () => {
       cancelled = true;
     };
