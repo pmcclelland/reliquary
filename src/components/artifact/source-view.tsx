@@ -4,7 +4,11 @@ import { ensureExplainer, parseLineRange, type LineRange } from "@/lib/reliquary
 import { cn } from "@/lib/utils";
 import { ArtifactFrame } from "./frame";
 
-type SourceLine = { text: string; style?: Record<string, string> }[];
+type SourceLine = {
+  text: string;
+  style?: Record<string, string>;
+  comment?: boolean;
+}[];
 
 function fallbackLines(html: string): SourceLine[] {
   return html.split("\n").map((line) => [{ text: line }]);
@@ -104,7 +108,7 @@ function SourceListing({ html, highlight }: { html: string; highlight: LineRange
                 {tokens.map((token, tokenIndex) => (
                   <span
                     key={tokenIndex}
-                    className={token.style ? "tok" : undefined}
+                    className={cn(token.style && "tok", token.comment && "tok-comment")}
                     style={token.style as CSSProperties | undefined}
                   >
                     {token.text || " "}

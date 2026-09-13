@@ -4,7 +4,15 @@ import type { HighlighterCore } from "@shikijs/core";
 export type SourceToken = {
   text: string;
   style?: Record<string, string>;
+  comment?: boolean;
 };
+
+/** vitesse-light comment. Used to mark `.tok-comment` for the paper-theme bump. */
+const VITESSE_LIGHT_COMMENT = "#a0ada0";
+
+function isCommentToken(style?: Record<string, string>): boolean {
+  return style?.["--shiki-light"]?.toLowerCase() === VITESSE_LIGHT_COMMENT;
+}
 
 export type SourceLine = SourceToken[];
 
@@ -66,6 +74,7 @@ export async function highlightHtmlSource(html: string): Promise<SourceLine[]> {
       line.map((token) => ({
         text: token.content,
         style: token.htmlStyle,
+        comment: isCommentToken(token.htmlStyle),
       })),
     );
   } catch {

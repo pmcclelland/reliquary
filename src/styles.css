@@ -198,6 +198,11 @@ html[data-theme="dark"] {
   color: var(--shiki-light);
 }
 
+/* Paper: vitesse comment #A0ADA0 is a half-step too pale. Dark stays as-is. */
+html:not([data-theme="dark"]) .source-listing .tok-comment {
+  color: color-mix(in oklab, var(--shiki-light) 68%, var(--color-fg));
+}
+
 html[data-theme="dark"] .source-listing .tok {
   color: var(--shiki-dark);
 }

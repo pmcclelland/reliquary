@@ -48,6 +48,8 @@ describe("highlightHtmlSource", () => {
     const colors = [comment, tag, attr, str].map((token) => token?.style?.["--shiki-light"]);
     assert.ok(colors.every((color) => typeof color === "string" && color.length > 0));
     assert.equal(new Set(colors).size, 4);
+    assert.equal(comment?.comment, true);
+    assert.equal(tag?.comment, false);
   });
 
   it("highlights embedded CSS and JavaScript", async () => {
@@ -67,6 +69,18 @@ describe("highlightHtmlSource", () => {
     assert.ok(tag?.style?.["--shiki-light"]);
     assert.ok(tag?.style?.["--shiki-dark"]);
     assert.notEqual(tag?.style?.["--shiki-light"], tag?.style?.["--shiki-dark"]);
+  });
+
+  it("marks HTML, CSS, and JS comments", async () => {
+    const lines = await highlightHtmlSource(`<!-- h -->
+<style>/* c */</style>
+<script>// j
+const x = 1;</script>`);
+    const comments = lines.flat().filter((token) => token.comment);
+    assert.ok(comments.some((token) => token.text.includes("<!--")));
+    assert.ok(comments.some((token) => token.text.includes("/*")));
+    assert.ok(comments.some((token) => token.text.includes("//")));
+    assert.equal(lines.flat().find((token) => token.text === "const")?.comment, false);
   });
 
   it("round-trips a seed artifact", async () => {
