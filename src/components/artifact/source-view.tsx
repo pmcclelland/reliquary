@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Group, Panel, Separator as ResizeSeparator } from "react-resizable-panels";
+import { ensureExplainer, parseLineRange, type LineRange } from "@/lib/reliquary/explainer";
 import {
-  ensureExplainer,
-  parseLineRange,
-  type LineRange,
-} from "@/lib/reliquary/explainer";
+  highlightHtmlSource,
+  plainSourceLines,
+  type SourceLine,
+} from "@/lib/reliquary/highlight-source";
 import { cn } from "@/lib/utils";
 import { ArtifactFrame } from "./frame";
 
@@ -20,9 +21,7 @@ export function SourceView({
   const [range, setRange] = useState<LineRange | null>(null);
   const notes = explainerHtml.trim();
   const hasExplainer = Boolean(notes);
-  const explainerDoc = hasExplainer
-    ? ensureExplainer(notes, `${title} — notes`)
-    : "";
+  const explainerDoc = hasExplainer ? ensureExplainer(notes, `${title} — notes`) : "";
 
   const onLineRef = useCallback((raw: string) => {
     setRange(parseLineRange(raw));
@@ -37,11 +36,7 @@ export function SourceView({
       <div className="grid h-full min-h-0 grid-rows-2 md:hidden">
         <SourceListing html={html} highlight={range} />
         <div className="min-h-0 border-t border-border">
-          <ArtifactFrame
-            html={explainerDoc}
-            title={`${title} notes`}
-            onLineRef={onLineRef}
-          />
+          <ArtifactFrame html={explainerDoc} title={`${title} notes`} onLineRef={onLineRef} />
         </div>
       </div>
       <div className="hidden h-full min-h-0 md:block">
@@ -50,17 +45,8 @@ export function SourceView({
             <SourceListing html={html} highlight={range} />
           </Panel>
           <ResizeSeparator className="w-1 bg-border hover:bg-border-strong" />
-          <Panel
-            id="explainer"
-            defaultSize="42%"
-            minSize="22%"
-            className="min-h-0"
-          >
-            <ArtifactFrame
-              html={explainerDoc}
-              title={`${title} notes`}
-              onLineRef={onLineRef}
-            />
+          <Panel id="explainer" defaultSize="42%" minSize="22%" className="min-h-0">
+            <ArtifactFrame html={explainerDoc} title={`${title} notes`} onLineRef={onLineRef} />
           </Panel>
         </Group>
       </div>
@@ -68,42 +54,56 @@ export function SourceView({
   );
 }
 
-function SourceListing({
-  html,
-  highlight,
-}: {
-  html: string;
-  highlight: LineRange | null;
-}) {
-  const lines = html.split("\n");
+function SourceListing({ html, highlight }: { html: string; highlight: LineRange | null }) {
+  const fallback = useMemo(() => plainSourceLines(html), [html]);
+  const [painted, setPainted] = useState<{
+    html: string;
+    lines: SourceLine[];
+  } | null>(null);
+  const lines = painted?.html === html ? painted.lines : fallback;
   const startRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void highlightHtmlSource(html).then((next) => {
+      if (!cancelled) setPainted({ html, lines: next });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [html]);
 
   useEffect(() => {
     startRef.current?.scrollIntoView({ block: "center" });
   }, [highlight?.start, highlight?.end]);
 
   return (
-    <pre className="h-full overflow-auto p-4 font-mono text-[12px] leading-relaxed text-fg">
+    <pre className="source-listing h-full overflow-auto p-4 font-mono text-[12px] leading-relaxed text-fg">
       <code>
         {lines.map((line, index) => {
           const n = index + 1;
-          const on =
-            highlight !== null && n >= highlight.start && n <= highlight.end;
+          const on = highlight !== null && n >= highlight.start && n <= highlight.end;
+          const tokens = line.length > 0 ? line : [{ text: " " }];
           return (
             <div
               key={n}
               id={`L${n}`}
               ref={n === highlight?.start ? startRef : undefined}
-              className={cn(
-                "flex gap-3",
-                on && "bg-accent/15 text-fg",
-              )}
+              className={cn("flex gap-3", on && "bg-accent/15 text-fg")}
             >
               <span className="w-10 shrink-0 select-none text-right text-subtle tabular-nums">
                 {n}
               </span>
               <span className="min-w-0 whitespace-pre-wrap break-all">
-                {line || " "}
+                {tokens.map((token, tokenIndex) => (
+                  <span
+                    key={tokenIndex}
+                    className={token.style ? "tok" : undefined}
+                    style={token.style as CSSProperties | undefined}
+                  >
+                    {token.text || " "}
+                  </span>
+                ))}
               </span>
             </div>
           );

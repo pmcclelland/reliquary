@@ -191,3 +191,13 @@ html[data-theme="dark"] {
   transform-origin: center;
   animation: reliquary-orb 3.2s var(--ease-smooth-out) infinite alternate;
 }
+
+/* Source listing: Shiki vitesse-light / vitesse-dark dual tokens.
+   Colors live on each .tok as --shiki-light / --shiki-dark. */
+.source-listing .tok {
+  color: var(--shiki-light);
+}
+
+html[data-theme="dark"] .source-listing .tok {
+  color: var(--shiki-dark);
+}
