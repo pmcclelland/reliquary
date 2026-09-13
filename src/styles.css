@@ -191,3 +191,18 @@ html[data-theme="dark"] {
   transform-origin: center;
   animation: reliquary-orb 3.2s var(--ease-smooth-out) infinite alternate;
 }
+
+/* Source listing: Shiki vitesse-light / vitesse-dark dual tokens.
+   Colors live on each .tok as --shiki-light / --shiki-dark. */
+.source-listing .tok {
+  color: var(--shiki-light);
+}
+
+/* Paper: vitesse comment #A0ADA0 is a half-step too pale. Dark stays as-is. */
+html:not([data-theme="dark"]) .source-listing .tok-comment {
+  color: color-mix(in oklab, var(--shiki-light) 68%, var(--color-fg));
+}
+
+html[data-theme="dark"] .source-listing .tok {
+  color: var(--shiki-dark);
+}
