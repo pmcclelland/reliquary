@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { readEnv } from "@/lib/runtime.server";
 import { notFound } from "@tanstack/react-router";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
@@ -27,10 +28,7 @@ function rethrow(err: unknown): never {
 
 export const getAuthOptions = createServerFn({ method: "GET" }).handler(
   async (): Promise<AuthOptions> => ({
-    google: Boolean(
-      process.env.GOOGLE_CLIENT_ID?.trim() &&
-        process.env.GOOGLE_CLIENT_SECRET?.trim(),
-    ),
+    google: Boolean(readEnv("GOOGLE_CLIENT_ID") && readEnv("GOOGLE_CLIENT_SECRET")),
     email: true,
   }),
 );

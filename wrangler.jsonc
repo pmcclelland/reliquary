@@ -4,7 +4,7 @@
   "account_id": "3d3af42aa4a4ca0d8b5541d354ad0730",
   // Nitro fills `main` and `assets` on `vite build` (cloudflare_module preset).
   "compatibility_date": "2026-09-13",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
   "workers_dev": true,
   "preview_urls": true,
   "routes": [
