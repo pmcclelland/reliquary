@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "reliquary",
+  "account_id": "3d3af42aa4a4ca0d8b5541d354ad0730",
+  // Nitro fills `main` and `assets` on `vite build` (cloudflare_module preset).
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "routes": [
+    { "pattern": "reliquary.pmcclel.land", "custom_domain": true },
+  ],
+  "placement": { "mode": "smart" },
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 },
+  },
+  "vars": {
+    "VITE_AUTH_ENABLED": "true",
+    "BETTER_AUTH_URL": "https://reliquary.pmcclel.land",
+  },
+}

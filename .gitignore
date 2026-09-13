@@ -3,4 +3,10 @@ node_modules/
 .github_repo
 .env
 .env.*
+.dev.vars
+.dev.vars.*
+.wrangler-secrets.json
 .vercel/
+.wrangler/
+.output/
+.nitro/
