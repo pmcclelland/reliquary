@@ -32,11 +32,11 @@
 import { betterAuth } from "better-auth";
 import { bearer, genericOAuth } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
-import { getCookie } from "@tanstack/react-start/server";
+import { getCookie, getRequest } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { neonConfig, Pool } from "@neondatabase/serverless";
 import { ensureDbReady, getPglite } from "../db";
-import { readEnv } from "../runtime.server";
+import { isCloudflareWorker, readEnv } from "../runtime.server";
 import { emailAndPasswordEnabled } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
@@ -155,7 +155,12 @@ function createAuth() {
   // embedded PGLite (preview) via a Kysely dialect — so Better Auth persists to the
   // SAME DB as app data, including email/password users.
   const database = databaseUrl
-    ? new Pool({ connectionString: databaseUrl, max: 5 })
+    ? new Pool({
+        connectionString: databaseUrl,
+        // Workers: one connection per request. Neon WebSockets cannot be
+        // reused across isolates/requests (that 1101s after OAuth).
+        max: isCloudflareWorker() ? 1 : 5,
+      })
     : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
 
   const grokOAuthPlugin = authConfigured
@@ -228,7 +233,20 @@ const globalAuthInstance = globalThis as typeof globalThis & {
   __reliquaryAuth__?: ReliquaryAuth;
 };
 
+const authByRequest = new WeakMap<Request, ReliquaryAuth>();
+
 function getAuth(): ReliquaryAuth {
+  // Neon forbids holding a WebSocket Pool across Worker requests. Scope Better
+  // Auth (and its Pool) to the current request when we can see it.
+  const request = getRequest();
+  if (request) {
+    const cached = authByRequest.get(request);
+    if (cached) return cached;
+    const created = createAuth();
+    authByRequest.set(request, created);
+    return created;
+  }
+  if (isCloudflareWorker()) return createAuth();
   globalAuthInstance.__reliquaryAuth__ ??= createAuth();
   return globalAuthInstance.__reliquaryAuth__;
 }
@@ -236,9 +254,10 @@ function getAuth(): ReliquaryAuth {
 // Lazy: Cloudflare only exposes secrets during a request, so Better Auth cannot
 // be constructed at module load.
 export const auth: ReliquaryAuth = new Proxy({} as ReliquaryAuth, {
-  get(_target, prop, receiver) {
+  get(_target, prop) {
+    if (prop === "then") return undefined;
     const instance = getAuth();
-    const value = Reflect.get(instance, prop, receiver) as unknown;
+    const value = Reflect.get(instance, prop, instance) as unknown;
     return typeof value === "function"
       ? (value as (...args: unknown[]) => unknown).bind(instance)
       : value;
