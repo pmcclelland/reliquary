@@ -90,9 +90,14 @@ const LOCAL_DEV_ORIGINS: string[] = [
   "http://127.0.0.1:8080",
   "http://[::1]:8080",
 ];
+const PRODUCTION_HOST = "reliquary.pmcclel.land";
+const WORKERS_DEV_HOST = "reliquary.pmcclelland.workers.dev";
+const WORKERS_DEV_PREVIEW_HOST = "*.pmcclelland.workers.dev";
+
 const PUBLIC_ORIGINS: string[] = [
-  "https://reliquary.pmcclel.land",
-  "https://reliquary.pmcclelland.workers.dev",
+  `https://${PRODUCTION_HOST}`,
+  `https://${WORKERS_DEV_HOST}`,
+  `https://${WORKERS_DEV_PREVIEW_HOST}`,
   "https://*.workers.dev",
   "https://reliquary-cyan.vercel.app",
   "https://*.vercel.app",
@@ -109,39 +114,33 @@ function createAuth() {
   const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET;
   const authConfigured = isAuthConfigured();
 
-  // This app's own Better Auth origin. When deployed the deployer injects the
-  // public URL. In the sandbox live preview there's no fixed URL (each preview gets
-  // a dynamic `*.grok-sandbox.com` host), so we hand Better Auth a dynamic baseURL:
-  // it derives the origin per-request from the (proxied) host, validated against the
-  // preview allowlist, which makes the OAuth `redirect_uri` the concrete preview URL
-  // the broker's preview client accepts.
+  // Derive origin from the request host so Google `redirect_uri` matches
+  // production, workers.dev, or a PR preview (`pr-N-reliquary.pmcclelland.workers.dev`).
   const explicitBaseURL = env("BETTER_AUTH_URL");
-  // Explicit `string[]` (not a readonly tuple) — Better Auth's DynamicBaseURLConfig
-  // requires a mutable `allowedHosts: string[]`.
   const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
   const googleClientId = env("GOOGLE_CLIENT_ID");
   const googleClientSecret = env("GOOGLE_CLIENT_SECRET");
   const googleEnabled = Boolean(googleClientId && googleClientSecret);
-  const baseURL = explicitBaseURL ?? {
-    // Include loopback hosts so dynamic baseURL resolves for local email/password
-    // (not only the preview wildcard).
-    allowedHosts: [...previewAllowedHosts, "localhost", "127.0.0.1", "[::1]"],
-    // `auto` → trust both http:// and https:// expansions of allowedHosts
-    // (preview is https; local dev is http).
+  const baseURL = {
+    allowedHosts: [
+      PRODUCTION_HOST,
+      WORKERS_DEV_HOST,
+      WORKERS_DEV_PREVIEW_HOST,
+      ...previewAllowedHosts,
+      "localhost",
+      "127.0.0.1",
+      "[::1]",
+    ],
     protocol: "auto" as const,
-    fallback: "http://localhost:8080",
+    fallback: explicitBaseURL ?? `https://${PRODUCTION_HOST}`,
   };
 
-  // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
-  // Missing entries here surface as FORBIDDEN "Invalid origin".
-  const trustedOrigins: string[] = explicitBaseURL
-    ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS, ...PUBLIC_ORIGINS]
-    : [
-        ...previewAllowedHosts,
-        ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
-        ...LOCAL_DEV_ORIGINS,
-        ...PUBLIC_ORIGINS,
-      ];
+  const trustedOrigins: string[] = [
+    ...previewAllowedHosts,
+    ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
+    ...LOCAL_DEV_ORIGINS,
+    ...PUBLIC_ORIGINS,
+  ];
 
   const databaseUrl = env("DATABASE_URL");
 
