@@ -179,17 +179,15 @@ async function cmdLaunch(opts) {
   const logPath = join(STATE_DIR, "dev.log");
   const env = { ...process.env };
   delete env.DATABASE_URL;
+  const { openSync, closeSync } = await import("node:fs");
+  const logFd = openSync(logPath, "a");
   const child = spawn("npm", ["run", "dev"], {
     cwd: REPO_ROOT,
     env,
     detached: true,
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: ["ignore", logFd, logFd],
   });
-  const logFd = await import("node:fs").then((fs) =>
-    fs.createWriteStream(logPath, { flags: "a" }),
-  );
-  child.stdout?.pipe(logFd);
-  child.stderr?.pipe(logFd);
+  closeSync(logFd);
   child.unref();
   writeState({
     owned: true,
@@ -344,7 +342,10 @@ async function cmdDriveGuestWelcome(opts) {
     await page.getByRole("link", { name: /Welcome to Reliquary/ }).click();
     await page.waitForURL(/\/a\/welcome/);
     await page.getByRole("heading", { name: WELCOME_TITLE }).waitFor({ state: "visible" });
-    await page.getByRole("link", { name: "Sign in to save" }).waitFor({ state: "visible" });
+    await page
+      .getByRole("banner")
+      .getByRole("link", { name: "Sign in to save" })
+      .waitFor({ state: "visible" });
     const editCount = await page.getByRole("link", { name: "Edit" }).count();
     if (editCount > 0) throw new Error("Guest wiki unexpectedly shows Edit");
     const frame = page.frameLocator('iframe[title="Welcome to Reliquary"]');

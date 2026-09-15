@@ -41,8 +41,10 @@ Guest seeded Welcome walk (`/` → `/a/welcome` → Source → Open `/s/welcome`
 - **Open wiki.** Choose that card. Run
   `page.getByRole('link', { name: /Welcome to Reliquary/ }).click()`. URL is
   `/a/welcome`. Heading is `Welcome to Reliquary`. Tags include `#guide` and
-  `#wiki`. Guest control `getByRole('link', { name: 'Sign in to save' })` is
-  visible. There is no Edit or History control.
+  `#wiki`. Guest control
+  `page.getByRole('banner').getByRole('link', { name: 'Sign in to save' })` is
+  visible (the sidebar has a second link with the same name). There is no Edit
+  or History control.
 - **Iframe render.** Wait for `iframe[title="Welcome to Reliquary"]`. Inside the
   frame, the lead **A place to keep things that move.** is visible.
 - **Source.** Choose **Source**. Run
@@ -74,6 +76,9 @@ Optional on the same wiki page (not required for the first proof):
   frame text, not the blob string.
 - Source highlight is async. The listing is readable immediately as plain text;
   wait for `pre.source-listing` rather than Shiki tokens.
+- **Sign in to save** appears twice (sidebar CTA and wiki header). Scope to
+  `getByRole('banner')` or assert `count() >= 1` instead of a single strict
+  locator.
 - **Open** is a link (`getByRole('link', { name: 'Open' })`), not a button.
   **Source** and **Share** are buttons.
 - Guest **Sign in to save** is a login link. Following it is not “Save to

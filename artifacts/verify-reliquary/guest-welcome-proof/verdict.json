@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "feature": "guest-welcome",
+  "entryPoint": "/ → /a/welcome → Source → /s/welcome",
+  "runId": "guest-welcome-proof",
+  "evidenceDir": "artifacts/verify-reliquary/guest-welcome-proof",
+  "baseUrl": "http://127.0.0.1:8080",
+  "steps": [
+    {
+      "id": "library",
+      "url": "http://127.0.0.1:8080/",
+      "ok": true
+    },
+    {
+      "id": "wiki",
+      "url": "http://127.0.0.1:8080/a/welcome",
+      "iframeLead": "A place to keep things that move.",
+      "guestSave": true,
+      "ok": true
+    },
+    {
+      "id": "source",
+      "url": "http://127.0.0.1:8080/a/welcome",
+      "excerpt": "A place to keep things that move.",
+      "ok": true
+    },
+    {
+      "id": "share",
+      "url": "http://127.0.0.1:8080/s/welcome",
+      "saveHref": "/login?next=%2Fs%2Fwelcome",
+      "iframeLead": "A place to keep things that move.",
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": []
+}

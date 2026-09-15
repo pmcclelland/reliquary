@@ -39,6 +39,7 @@ Or through this skill’s helper (records the pid this run owns):
 
 ```bash
 node .cursor/skills/verify-reliquary/scripts/verify-reliquary.mjs launch
+# returns after :8080 answers; the dev server stays in its own process group
 ```
 
 Revive contract in this sandbox: `sh /workspace/startup.sh` — if
@@ -126,7 +127,7 @@ Ad-hoc Playwright (Chromium, signed-out, `http://127.0.0.1:8080`):
 | Source | `getByRole('button', { name: 'Source' })` |
 | Open (live) | `getByRole('link', { name: 'Open' })` → `/s/welcome` |
 | Share | `getByRole('button', { name: 'Share' })` → dialog `Share Welcome to Reliquary`, input `aria-label="Share link"` |
-| Sign in to save (wiki, guest) | `getByRole('link', { name: 'Sign in to save' })` → `/login` |
+| Sign in to save (wiki, guest) | `getByRole('banner').getByRole('link', { name: 'Sign in to save' })` → `/login` (sidebar has a second copy) |
 | More menu | `getByRole('button', { name: 'More' })` — guest: Copy share link, Copy HTML; no History/Delete |
 | Live bar back | `getByRole('link', { name: 'Back to Reliquary' })` |
 | Copy share (live) | `getByRole('button', { name: 'Copy share link' })` |
@@ -218,7 +219,8 @@ If launch reused a server this run did not start, cleanup leaves it running.
 
 | Helper | Role |
 | --- | --- |
-| `.cursor/skills/verify-reliquary/scripts/verify-reliquary.mjs` | Launch / doctor / drive / cleanup. Executable; repo-root invocation below. |
+| `.cursor/skills/verify-reliquary/scripts/verify-reliquary.mjs` | Launch / doctor / drive / cleanup. Executable; repo-root invocation below. Launch detaches `npm run dev` (stdio to `/tmp/verify-reliquary/dev.log`) and returns when `:8080` answers. |
+| `npx playwright install chromium` | Once, if drive fails with Playwright “Executable doesn't exist”. |
 | `scripts/browser-smoke.mjs` | Headless Chromium still of `/` (desktop + mobile). Not a feature walk. |
 | `src/lib/reliquary/guest.test.ts` | Node tests for seed slugs/titles — catalog doctor, not a UI drive. |
 

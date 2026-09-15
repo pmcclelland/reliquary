@@ -1,0 +1,6 @@
+url: http://127.0.0.1:8080/s/welcome
+title: Welcome to Reliquary · Reliquary
+a: Back to Reliquary
+a: SaveSave to library
+button: Copy share link
+section: Notifications alt+T

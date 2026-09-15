@@ -1,0 +1,32 @@
+url: http://127.0.0.1:8080/a/welcome
+title: Reliquary
+a: Reliquary
+button: Collapse sidebar
+a: Sign in to save
+a: All artifacts5
+a: Guides2
+a: Motion2
+a: Interface1
+a: guide2
+a: motion2
+a: wiki1
+a: type1
+a: canvas1
+a: study1
+a: ui1
+a: tool1
+a: API & MCP
+a: Sign in
+button: Appearance
+button: Open menu
+a: Reliquary
+button: Appearance
+a: Sign in
+a: Guides
+h1: Welcome to Reliquary
+button: Source
+a: Open
+button: Share
+a: Sign in to save
+button: More
+section: Notifications alt+T

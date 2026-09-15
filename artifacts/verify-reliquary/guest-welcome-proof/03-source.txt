@@ -1,0 +1,186 @@
+1
+<!DOCTYPE html>
+2
+<html lang="en">
+3
+<head>
+4
+  <meta charset="utf-8" />
+5
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+6
+  <title>Welcome to Reliquary</title>
+7
+  <style>
+8
+    :root { color-scheme: light; }
+9
+    * { box-sizing: border-box; }
+10
+    html, body { margin: 0; }
+11
+    body {
+12
+      font-family: Georgia, "Times New Roman", serif;
+13
+      background: #f3efe6;
+14
+      color: #1a1714;
+15
+      line-height: 1.65;
+16
+    }
+17
+    .page {
+18
+      max-width: 38rem;
+19
+      margin: 0 auto;
+20
+      padding: 4.5rem 1.5rem 6rem;
+21
+    }
+22
+    .kicker {
+23
+      font-family: ui-sans-serif, system-ui, sans-serif;
+24
+      font-size: 0.72rem;
+25
+      letter-spacing: 0.18em;
+26
+      text-transform: uppercase;
+27
+      color: #6f675c;
+28
+      margin: 0 0 1.25rem;
+29
+    }
+30
+    h1 {
+31
+      font-size: clamp(2.1rem, 6vw, 3.15rem);
+32
+      font-weight: 500;
+33
+      letter-spacing: -0.03em;
+34
+      line-height: 1.12;
+35
+      margin: 0 0 1rem;
+36
+    }
+37
+    .lead {
+38
+      font-size: 1.15rem;
+39
+      color: #3f3a34;
+40
+      margin: 0 0 2.5rem;
+41
+    }
+42
+    h2 {
+43
+      font-size: 1.2rem;
+44
+      font-weight: 500;
+45
+      margin: 2.4rem 0 0.6rem;
+46
+    }
+47
+    p { margin: 0 0 1rem; }
+48
+    ul { margin: 0 0 1rem; padding-left: 1.15rem; }
+49
+    li { margin: 0.25rem 0; }
+50
+    code {
+51
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+52
+      font-size: 0.86em;
+53
+      background: #ece6da;
+54
+      padding: 0.1em 0.35em;
+55
+      border-radius: 4px;
+56
+    }
+57
+    .rule {
+58
+      height: 1px;
+59
+      background: #d8d0c3;
+60
+      border: 0;
+61
+      margin: 2.5rem 0;
+62
+    }
+63
+    .note {
+64
+      font-family: ui-sans-serif, system-ui, sans-serif;
+65
+      font-size: 0.88rem;
+66
+      color: #6f675c;
+67
+      border-left: 2px solid #3d5468;
+68
+      padding: 0.2rem 0 0.2rem 1rem;
+69
+      margin: 1.5rem 0 0;
+70
+    }
+71
+  </style>
+72
+</head>
+73
+<body>
+74
+  <article class="page">
+75
+    <p class="kicker">Guides</p>
+76
+    <h1>A place to keep things that move.</h1>
+77
+    <p class="lead">Reliquary is a quiet wiki for self-contained HTML artifacts — pages, studies, and small interfaces that deserve a shelf rather than a tab you will lose.</p>
+78
+    <hr class="rule" />
+79
+    <h2>What is an artifact?</h2>
+80
+    <p>An artifact is a single HTML file. It can be a typographic essay, a canvas study, or a React component wrapped in a document so it runs on its own. Nothing here is a multi-file app. The file is the work.</p>
+81
+    <h2>How to file one</h2>
+82
+    <ul>
+83
+      <li>Give it a title and a short description, the way you would a wiki page.</li>
+84
+      <li>Drop it in a collection, or leave it unfiled.</li>
+85
+      <li>Tag it so it can be found later — <code>motion</code>, <code>ui</code>, <code>notes</code>.</li>
+86
+    </ul>
+87
+    <h2>Agents</h2>
+88
+    <p>Anything that can speak HTTP or MCP can publish here. Create, edit, and remove artifacts through the public API, or connect an MCP client to the Reliquary server so a coding agent can file work as it goes.</p>
+89
+    <p class="note">Open Docs in the sidebar for the exact tools, payloads, and a React shell you can paste.</p>
+90
+  </article>
+91
+</body>
+92
+</html>
+93
+ 
