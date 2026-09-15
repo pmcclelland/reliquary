@@ -1,0 +1,40 @@
+url: http://127.0.0.1:8080/
+title: Reliquary
+a: Reliquary
+button: Collapse sidebar
+a: Sign in to save
+a: All artifacts5
+a: Guides2
+a: Motion2
+a: Interface1
+a: guide2
+a: motion2
+a: wiki1
+a: type1
+a: canvas1
+a: study1
+a: ui1
+a: tool1
+a: API & MCP
+a: Sign in
+button: Appearance
+button: Open menu
+a: Reliquary
+button: Appearance
+a: Sign in
+h1: A wiki of living artifacts
+input: Search artifacts
+h2: Guides
+a: HTMLJan 1, 2026Welcome to ReliquaryWhat an artifact is, how to file one, and how agents publish thro
+h3: Welcome to Reliquary
+a: HTMLJan 1, 2026Display headingA full-bleed nowrap title used to check preview-time heading wrap.#gui
+h3: Display heading
+h2: Motion
+a: HTMLJan 1, 2026HarmonicA Lissajous study. Ratio, phase, and speed are live.#motion#canvas
+h3: Harmonic
+a: HTMLJan 1, 2026SolsticeDrag the hour. The sky, sun, and hills follow.#motion#study
+h3: Solstice
+h2: Interface
+a: HTMLJan 1, 2026TesseraPin tiles, shuffle the rest. A small interface you can open in place.#ui#tool
+h3: Tessera
+section: Notifications alt+T
