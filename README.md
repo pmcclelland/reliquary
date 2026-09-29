@@ -91,5 +91,3 @@ npm run dev
 ```
 
 `npm run dev` binds `0.0.0.0:8080`. Typecheck with `npm run typecheck`; production build with `npm run build`. Deploy with `npm run deploy` (Wrangler).
-
-Production is a Cloudflare Worker at **reliquary.pmcclel.land**. Runtime secrets (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) are Wrangler secrets, not git. GitHub Actions deploys `main` once `CLOUDFLARE_API_TOKEN` is set in the repo secrets (Workers:Edit token). `CLOUDFLARE_ACCOUNT_ID` and `DATABASE_URL` are already set for migrations.
