@@ -3,30 +3,13 @@ import { ReliquaryError } from "@/lib/reliquary/errors";
 import { requireActor } from "@/lib/reliquary/actor.server";
 import { corsHeaders, errorResponse, handleOptions, json } from "@/lib/reliquary/http";
 import { handleJsonRpc } from "@/lib/reliquary/mcp";
+import { handleMcpGet } from "@/lib/reliquary/mcp-http";
 
 export const Route = createFileRoute("/api/mcp")({
   server: {
     handlers: {
       OPTIONS: () => handleOptions(),
-      GET: async () => {
-        return json({
-          name: "reliquary",
-          version: "1.0.0",
-          transport: "streamable-http",
-          protocol: "MCP",
-          endpoint: "/api/mcp",
-          tools: [
-            "list_artifacts",
-            "get_artifact",
-            "create_artifact",
-            "update_artifact",
-            "delete_artifact",
-            "list_collections",
-            "create_collection",
-            "delete_collection",
-          ],
-        });
-      },
+      GET: ({ request }) => handleMcpGet(request),
       POST: async ({ request }) => {
         let userId: string;
         try {

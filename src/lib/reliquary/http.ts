@@ -1,4 +1,4 @@
-import { ReliquaryError } from "./errors";
+import { ReliquaryError } from "./errors.ts";
 
 export function corsHeaders(): Record<string, string> {
   return {
