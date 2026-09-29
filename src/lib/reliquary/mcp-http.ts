@@ -1,4 +1,4 @@
-import { corsHeaders, json } from "./http";
+import { corsHeaders, json } from "./http.ts";
 
 const DISCOVERY = {
   name: "reliquary",
