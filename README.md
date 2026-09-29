@@ -6,8 +6,6 @@ A wiki of living artifacts.
 
 Self-contained HTML — pages, motion studies, and small interfaces — filed like notes in a quiet archive. Visitors can browse a seeded sample library without signing in. Sign in with Google or email for a private library, with its own MCP tokens.
 
-**[reliquary.pmcclel.land](https://reliquary.pmcclel.land)**
-
 ## Artifacts
 
 An artifact is a single HTML file. It can be a typographic essay, a canvas study, or a React module that Reliquary wraps so it runs on its own. Nothing here is a multi-file app. The file is the work.
