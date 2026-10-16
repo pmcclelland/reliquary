@@ -310,3 +310,9 @@ export const revokeMcpTokenFn = createServerFn({ method: "POST" })
     const { revokeMcpToken } = await import("./mcp-token.server");
     await revokeMcpToken(context.userId, data.id);
   });
+
+/** Absolute origin for share-card meta (scrapers need absolute og:image URLs). */
+export const getRequestOrigin = createServerFn({ method: "GET" }).handler(async () => {
+  const { requestOrigin } = await import("./request-origin.server");
+  return requestOrigin();
+});

@@ -11,6 +11,9 @@
     { "pattern": "reliquary.pmcclel.land", "custom_domain": true },
   ],
   "placement": { "mode": "smart" },
+  // Share-card renderer (og-worker/). /api/og/:id forwards here so the
+  // satori/resvg wasm stays out of this Worker's bundle.
+  "services": [{ "binding": "OG", "service": "reliquary-og" }],
   "observability": {
     "enabled": true,
     "logs": { "head_sampling_rate": 1 },

@@ -375,6 +375,15 @@ export function grokOgHeadTags({
   return tags;
 }
 
+/**
+ * A page that renders its own share card (e.g. Reliquary's per-relic `/s/:slug`
+ * cards) marks it with `<meta name="reliquary:og" content="page">`; the
+ * injector then keeps those tags instead of overwriting them with the site card.
+ */
+export function hasPageOwnedShareCard(html) {
+  return /<meta\b[^>]*\bname\s*=\s*["']reliquary:og["'][^>]*\bcontent\s*=\s*["']page["']/i.test(String(html));
+}
+
 export function stripShareMetaTags(html) {
   return String(html).replace(/<meta\b[^>]*>/gi, (tag) => {
     const attrs = [...tag.matchAll(/\b(?:property|name)\s*=\s*["']([^"']+)["']/gi)];
@@ -432,7 +441,8 @@ export function injectGrokPwaHead(html, ctx = {}) {
     host,
     documentTitle,
   );
-  let next = stripShareMetaTags(html);
+  const pageOwned = hasPageOwnedShareCard(html);
+  let next = pageOwned ? html : stripShareMetaTags(html);
 
   const missing = grokPwaHeadTags(appName)
     .filter(([key]) => {
@@ -442,10 +452,12 @@ export function injectGrokPwaHead(html, ctx = {}) {
     })
     .map(([, tag]) => tag);
 
-  next = insertAfterHeadOpen(
-    next,
-    grokOgHeadTags({ host, appName, site, documentTitle, cwd }).join(""),
-  );
+  if (!pageOwned) {
+    next = insertAfterHeadOpen(
+      next,
+      grokOgHeadTags({ host, appName, site, documentTitle, cwd }).join(""),
+    );
+  }
 
   if (!next.includes("/grok-app-builder/extensions.js")) {
     missing.push(...grokExtensionsHeadTags(projectId));

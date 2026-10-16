@@ -30,6 +30,36 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           VITE_AUTH_ENABLED: "true"
 
+      - run: npm run og:typecheck
+
+      # Share-card renderer (og-worker/). Deployed before the main Worker so
+      # its `OG` service binding always has a target.
+      - name: Deploy OG renderer (production)
+        if: github.event_name != 'pull_request'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy -c og-worker/wrangler.jsonc
+
+      - name: Deploy OG renderer (PR preview copy)
+        if: github.event_name == 'pull_request'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy -c og-worker/wrangler.jsonc --env preview
+
+      # Preview versions of the main Worker bind to reliquary-og-preview so a
+      # PR never swaps the renderer production uses.
+      - name: Point preview OG binding at the preview renderer
+        if: github.event_name == 'pull_request'
+        run: |
+          cfg=.output/server/wrangler.json
+          jq '.services = [(.services // [])[] | if .binding == "OG" then .service = "reliquary-og-preview" else . end]' "$cfg" > "$cfg.tmp"
+          mv "$cfg.tmp" "$cfg"
+          jq -c .services "$cfg"
+
       - name: Deploy production
         if: github.event_name != 'pull_request'
         uses: cloudflare/wrangler-action@v3
