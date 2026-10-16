@@ -8,23 +8,37 @@ import { ShareLinkDialog } from "@/components/artifact/share-dialog";
 import { Wordmark } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/reliquary/constants";
-import { getShareView } from "@/lib/reliquary/functions";
+import { getRequestOrigin, getShareView } from "@/lib/reliquary/functions";
+import { relicShareMeta } from "@/lib/reliquary/og";
 import { artifactShareUrl, copyText } from "@/lib/utils";
 
 export const Route = createFileRoute("/s/$slug")({
-  loader: ({ params }) => getShareView({ data: { slug: params.slug } }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData?.artifact
-          ? `${loaderData.artifact.title} · ${APP_NAME}`
-          : APP_NAME,
-      },
-      ...(loaderData?.artifact.description
-        ? [{ name: "description", content: loaderData.artifact.description }]
-        : []),
-    ],
-  }),
+  loader: async ({ params }) => {
+    const [view, origin] = await Promise.all([
+      getShareView({ data: { slug: params.slug } }),
+      typeof window === "undefined"
+        ? getRequestOrigin()
+        : Promise.resolve(window.location.origin),
+    ]);
+    return { ...view, origin };
+  },
+  head: ({ loaderData, params }) => {
+    const artifact = loaderData?.artifact;
+    if (!artifact) return { meta: [{ title: APP_NAME }] };
+    return {
+      meta: [
+        { title: `${artifact.title} · ${APP_NAME}` },
+        // Per-relic Open Graph / Twitter card. Only reached when the public
+        // share lookup succeeded; otherwise the site-wide card applies.
+        ...relicShareMeta({
+          origin: loaderData.origin,
+          relic: artifact,
+          appName: APP_NAME,
+          sharePath: `/s/${params.slug}`,
+        }),
+      ],
+    };
+  },
   component: SharePage,
 });
 
