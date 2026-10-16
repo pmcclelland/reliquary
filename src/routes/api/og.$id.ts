@@ -58,8 +58,15 @@ export const Route = createFileRoute("/api/og/$id")({
             ]);
             return { yoga: yoga.default, resvg: resvg.default };
           });
-          const eyebrow = [artifact.collectionTitle, ...(artifact.tags ?? []).slice(0, 2)]
-            .filter(Boolean)
+          const seen = new Set<string>();
+          const eyebrow = [artifact.collectionTitle, ...(artifact.tags ?? [])]
+            .filter((t): t is string => {
+              const k = String(t ?? "").trim().toLowerCase().replace(/s$/, "");
+              if (!k || seen.has(k)) return false;
+              seen.add(k);
+              return true;
+            })
+            .slice(0, 3)
             .join(" · ");
           const png = await renderRelicCardPng({
             title: clip(artifact.title || "Untitled relic", OG_TITLE_MAX),
