@@ -6,7 +6,8 @@
 import satori, { init as initSatori } from "satori/wasm";
 import initYoga from "yoga-wasm-web";
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
-import { OG_HEIGHT, OG_WIDTH } from "@/lib/reliquary/og";
+const OG_WIDTH = 1200;
+const OG_HEIGHT = 630;
 import { figtree400, figtree600, newsreader400 } from "./fonts.generated";
 
 // Design tokens mirrored from src/styles.css (light theme).

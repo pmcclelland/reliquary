@@ -183,12 +183,6 @@ export default defineConfig(({ command, isPreview }) => ({
     strictPort: true,
   },
   resolve: { tsconfigPaths: true },
-  // `?module` wasm imports (resvg for /api/og share cards) pass through the
-  // TanStack SSR build untouched; Nitro's unwasm turns them into a
-  // WebAssembly.Module import that Workers can instantiate.
-  environments: {
-    ssr: { build: { rollupOptions: { external: [/\.wasm\?module$/] } } },
-  },
   plugins: [
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.

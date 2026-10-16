@@ -1,0 +1,17 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  // Internal share-card renderer; only the main `reliquary` Worker calls it,
+  // through its `OG` service binding. Not publicly routed.
+  "name": "reliquary-og",
+  "account_id": "3d3af42aa4a4ca0d8b5541d354ad0730",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "env": {
+    // PR previews bind to this copy so unreviewed renderer code never
+    // replaces the production renderer.
+    "preview": { "name": "reliquary-og-preview", "workers_dev": false },
+  },
+}
