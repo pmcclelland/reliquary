@@ -12,13 +12,14 @@ import { OG_FALLBACK_PATH, OG_EXCERPT_MAX, OG_TITLE_MAX, clip, relicExcerpt } fr
 const CARD_CACHE = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800";
 const FALLBACK_CACHE = "public, max-age=300, s-maxage=300";
 
-function fallback(request: Request): Response {
+function fallback(request: Request, reason: string): Response {
   return new Response(null, {
     status: 302,
     headers: {
       Location: new URL(OG_FALLBACK_PATH, request.url).href,
       "Cache-Control": FALLBACK_CACHE,
       "Access-Control-Allow-Origin": "*",
+      "X-OG-Fallback": reason,
     },
   });
 }
@@ -45,7 +46,7 @@ export const Route = createFileRoute("/api/og/$id")({
           artifact = await getPublicArtifact(params.id);
         } catch (err) {
           console.warn("[og] no public relic", params.id, String(err));
-          return fallback(request);
+          return fallback(request, "not-public");
         }
         try {
           const { ensureOgWasm, renderRelicCardPng } = await import("@/lib/og/render.server");
@@ -79,7 +80,7 @@ export const Route = createFileRoute("/api/og/$id")({
           return res;
         } catch (err) {
           console.error("[og] render failed", err);
-          return fallback(request);
+          return fallback(request, `render-error ${String(err).slice(0, 160).replace(/[^\x20-\x7e]/g, "")}`);
         }
       },
     },
