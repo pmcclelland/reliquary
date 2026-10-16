@@ -43,17 +43,19 @@ export const Route = createFileRoute("/api/og/$id")({
         try {
           const { getPublicArtifact } = await import("@/lib/reliquary/store.server");
           artifact = await getPublicArtifact(params.id);
-        } catch {
+        } catch (err) {
+          console.warn("[og] no public relic", params.id, String(err));
           return fallback(request);
         }
         try {
-          const { ensureResvg, renderRelicCardPng } = await import("@/lib/og/render.server");
-          await ensureResvg(async () => {
+          const { ensureOgWasm, renderRelicCardPng } = await import("@/lib/og/render.server");
+          await ensureOgWasm(async () => {
             // unwasm turns `?module` into a WebAssembly.Module on Workers.
-            const mod = (await import("@resvg/resvg-wasm/index_bg.wasm?module")) as {
-              default: WebAssembly.Module;
-            };
-            return mod.default;
+            const [yoga, resvg] = await Promise.all([
+              import("satori/layout.wasm?module"),
+              import("@resvg/resvg-wasm/index_bg.wasm?module"),
+            ]);
+            return { yoga: yoga.default, resvg: resvg.default };
           });
           const eyebrow = [artifact.collectionTitle, ...(artifact.tags ?? []).slice(0, 2)]
             .filter(Boolean)

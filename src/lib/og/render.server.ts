@@ -3,7 +3,7 @@
  * SVG) and resvg (SVG → PNG). Pure of request context; callers decide what is
  * safe to show (see `/api/og/$id`).
  */
-import satori from "satori";
+import satori, { init as initSatori } from "satori/standalone";
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
 import { OG_HEIGHT, OG_WIDTH } from "@/lib/reliquary/og";
 import { figtree400, figtree600, newsreader400 } from "./fonts.generated";
@@ -37,14 +37,18 @@ function fonts() {
   return fontsCache;
 }
 
+type WasmInput = WebAssembly.Module | BufferSource;
 let wasmReady: Promise<void> | null = null;
-/** `wasm` is a WebAssembly.Module (Workers) or the raw bytes (Node). */
-export function ensureResvg(load: () => Promise<WebAssembly.Module | BufferSource>): Promise<void> {
+/**
+ * Workers forbid compiling wasm from bytes at runtime, so both satori's yoga
+ * layout engine and resvg are handed precompiled modules (`?module` imports in
+ * the route). Node callers may pass raw bytes instead.
+ */
+export function ensureOgWasm(load: () => Promise<{ yoga: WasmInput; resvg: WasmInput }>): Promise<void> {
   wasmReady ??= load()
-    .then((wasm) => initWasm(wasm))
+    .then(({ yoga, resvg }) => Promise.all([initSatori(yoga), initWasm(resvg)]))
+    .then(() => undefined)
     .catch((err) => {
-      // initWasm throws if already initialised in this isolate; anything else resets.
-      if (String(err).includes("Already initialized")) return;
       wasmReady = null;
       throw err;
     });
