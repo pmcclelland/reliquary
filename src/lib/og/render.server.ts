@@ -3,7 +3,8 @@
  * SVG) and resvg (SVG → PNG). Pure of request context; callers decide what is
  * safe to show (see `/api/og/$id`).
  */
-import satori, { init as initSatori } from "satori/standalone";
+import satori, { init as initSatori } from "satori/wasm";
+import initYoga from "yoga-wasm-web";
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
 import { OG_HEIGHT, OG_WIDTH } from "@/lib/reliquary/og";
 import { figtree400, figtree600, newsreader400 } from "./fonts.generated";
@@ -46,7 +47,10 @@ let wasmReady: Promise<void> | null = null;
  */
 export function ensureOgWasm(load: () => Promise<{ yoga: WasmInput; resvg: WasmInput }>): Promise<void> {
   wasmReady ??= load()
-    .then(({ yoga, resvg }) => Promise.all([initSatori(yoga), initWasm(resvg)]))
+    .then(async ({ yoga, resvg }) => {
+      initSatori(await initYoga(yoga as WebAssembly.Module));
+      await initWasm(resvg);
+    })
     .then(() => undefined)
     .catch((err) => {
       wasmReady = null;
@@ -87,9 +91,8 @@ export function relicCardTree(card: RelicCard): Node {
     h(
       "div",
       {
-        // satori sizes content-box: 1112×542 outer = 984×440 + padding + border.
-        width: OG_WIDTH - 88 - 128 - 2,
-        height: OG_HEIGHT - 88 - 100 - 2,
+        width: OG_WIDTH - 88,
+        height: OG_HEIGHT - 88,
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",

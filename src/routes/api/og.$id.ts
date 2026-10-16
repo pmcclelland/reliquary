@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/og/$id")({
           await ensureOgWasm(async () => {
             // unwasm turns `?module` into a WebAssembly.Module on Workers.
             const [yoga, resvg] = await Promise.all([
-              import("satori/layout.wasm?module"),
+              import("yoga-wasm-web/dist/yoga.wasm?module"),
               import("@resvg/resvg-wasm/index_bg.wasm?module"),
             ]);
             return { yoga: yoga.default, resvg: resvg.default };
@@ -80,7 +80,7 @@ export const Route = createFileRoute("/api/og/$id")({
           return res;
         } catch (err) {
           console.error("[og] render failed", err);
-          return fallback(request, `render-error ${String(err).slice(0, 160).replace(/[^\x20-\x7e]/g, "")}`);
+          return fallback(request, "render-error");
         }
       },
     },
